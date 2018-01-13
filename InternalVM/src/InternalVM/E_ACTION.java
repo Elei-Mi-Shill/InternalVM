@@ -49,29 +49,18 @@ public enum E_ACTION {
      */
     ASSIGN,
     /**
-     * returns the value of the specified object
-     * 
-     * @param param1 JPseudoInstruction: object that contains the value
-     */
-    GET_VALUE,
-    /**
-     * returns a constant value
-     * 
-     * @param param1 Object: value of the constant
-     */
-    GET_CONSTANT,
-    /**
      * returns the value of the calling object
      */
     GET_THIS, 
 
     COMPARE,
-    SUM,
+    MATH_SUM,
     MATH_SUBTRACT,
     MATH_MULTIPLY,
     MATH_DIVIDE, 
     LOGIC_AND, 
-    LOGIC_OR, 
+    LOGIC_OR,
+    BOOL_AND,
     /**
      * Unary not; the only parameter is the object to be inverted
      */
@@ -79,11 +68,51 @@ public enum E_ACTION {
     MATH_MODULE,
     SYS_DECLARE,
     EXECUTE_BLOCK, 
+    /**
+     * this function returns a variable
+     * @param Value String containing the variable name
+     */
     GET_VARIABLE,
     /**
      * this function indicates that we are exiting from the scope, so the
      * variables inside it are no longer valid
      */
-    CLEAN_BLOCK;
+    CLEAN_BLOCK, 
+    /**
+     * returns the value stored in Value
+     * 
+     * @param Value Value to return
+     */
+    GET_VALUE,
+    /**
+     * returns the token name stored in Value
+     * 
+     * @param Value Value to return
+     */
+    GET_CONSTANT_TOKEN,
+    /**
+     * returns the String value stored in Value
+     * 
+     * @param Value Value to return
+     */
+    GET_CONSTANT_STRING,
+    /**
+     * returns the integer value stored in Value
+     * 
+     * @param Value Value to return
+     */
+    GET_CONSTANT_INTEGER,
+    /**
+     * returns the floating point value stored in Value
+     * 
+     * @param Value Value to return
+     */
+    GET_CONSTANT_FLOAT,
+    /**
+     * this function returns an identifier
+     * @param Value String containing the identifier name
+     */
+    GET_IDENTIFIER, 
+    GET_NULL; 
 
 }

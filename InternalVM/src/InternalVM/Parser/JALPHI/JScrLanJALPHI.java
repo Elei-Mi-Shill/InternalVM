@@ -22,8 +22,6 @@ import InternalVM.Parser.JPseudoProgram;
 import InternalVM.Parser.JPseudoType;
 import InternalVM.Parser.JScriptingLanguage;
 import JScriptParser.VMProviderInterface;
-import java.io.IOException;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,6 +30,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class JScrLanJALPHI extends JScriptingLanguage {
+    
+    private static final Pattern ISFLOAT = Pattern.compile("^\\d+([\\.][\\d]+)?([e|E][+-]?[\\d]+)?$");
+    private static final Pattern ISLONG = Pattern.compile("^\\d+$");
+    private static final Pattern ISHEX = Pattern.compile("^0x[\\dA-Ea-e]+$");
     
     public static final JLexerToken WHITESPACE = new JLexerToken(ELexerTokenType.WHITESPACE, " ");
 
@@ -42,53 +44,52 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     /**
      * "." is used to separate parent and child in a object identifier
      */
-    public static final JLexerToken DOT = new JLexerToken(ELexerTokenType.BINARYOP, ".");
     /**
      * ":" is used in variable and argument declarations
      */
+    public static final JLexerToken DOT = new JLexerToken(ELexerTokenType.BINARYOP, ".");
     public static final JLexerToken DECLARE = new JLexerToken(ELexerTokenType.ASSIGN, ":");
     public static final JLexerToken SEPARATE = new JLexerToken(ELexerTokenType.SEPARATOR, ",");
     public static final JLexerToken END_INSTRUCTION = new JLexerToken(ELexerTokenType.ENDCOMMAND, ";");
     public static final JLexerToken ASSIGN = new JLexerToken(ELexerTokenType.ASSIGN, "=");
     public static final JLexerToken PAR_OPEN = new JLexerToken(ELexerTokenType.SEPARATOR, "(");
     public static final JLexerToken PAR_CLOSE = new JLexerToken(ELexerTokenType.SEPARATOR, ")");
-    public static final JLexerToken GREATERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, ">");
-    public static final JLexerToken LESSERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, "<");
+    public static final JLexerToken COMP_GREATERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, ">");
+    public static final JLexerToken COMP_LESSERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, "<");
     public static final JLexerToken QPAR_OPEN = new JLexerToken(ELexerTokenType.SEPARATOR, "[");
     public static final JLexerToken QPAR_CLOSE = new JLexerToken(ELexerTokenType.SEPARATOR, "]");
-    public static final JLexerToken BOOL_NOT = new JLexerToken(ELexerTokenType.UNARYOP, "!");
-    public static final JLexerToken ADD = new JLexerToken(ELexerTokenType.BINARYOP, "+");
-    public static final JLexerToken SUB = new JLexerToken(ELexerTokenType.BINARYOP, "-");
-    public static final JLexerToken MULT = new JLexerToken(ELexerTokenType.BINARYOP, "*");
-    public static final JLexerToken DIV = new JLexerToken(ELexerTokenType.BINARYOP, "/");
-    public static final JLexerToken MOD = new JLexerToken(ELexerTokenType.BINARYOP, "%");
-    public static final JLexerToken AND = new JLexerToken(ELexerTokenType.BINARYOP, "&");
-    public static final JLexerToken OR = new JLexerToken(ELexerTokenType.BINARYOP, "|");
+    public static final JLexerToken UNAOP_BOOL_NOT = new JLexerToken(ELexerTokenType.UNARYOP, "!");
+    public static final JLexerToken BINOP_ADD = new JLexerToken(ELexerTokenType.BINARYOP, "+");
+    public static final JLexerToken BINOP_SUB = new JLexerToken(ELexerTokenType.BINARYOP, "-");
+    public static final JLexerToken BINOP_MULT = new JLexerToken(ELexerTokenType.BINARYOP, "*");
+    public static final JLexerToken BINOP_DIV = new JLexerToken(ELexerTokenType.BINARYOP, "/");
+    public static final JLexerToken BINOP_MOD = new JLexerToken(ELexerTokenType.BINARYOP, "%");
+    public static final JLexerToken BINOP_AND = new JLexerToken(ELexerTokenType.BINARYOP, "&");
+    public static final JLexerToken BINOP_OR = new JLexerToken(ELexerTokenType.BINARYOP, "|");
     public static final JLexerToken LINE_COMMENT = new JLexerToken(ELexerTokenType.CODE_BLOCK, "//");
     public static final JLexerToken COMMENT_START = new JLexerToken(ELexerTokenType.CODE_BLOCK, "/*");
     public static final JLexerToken COMMENT_END = new JLexerToken(ELexerTokenType.CODE_BLOCK, "*/");
-    public static final JLexerToken ISEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "==");
-    public static final JLexerToken NOTEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "!=");
-    public static final JLexerToken SHIFTRIGHT = new JLexerToken(ELexerTokenType.BINARYOP, ">>");
-    public static final JLexerToken SHIFTLEFT = new JLexerToken(ELexerTokenType.BINARYOP, "<<");
-    public static final JLexerToken SHIFTRIGHT_BY = new JLexerToken(ELexerTokenType.BINARYOP, ">>=");
-    public static final JLexerToken SHIFTLEFT_BY = new JLexerToken(ELexerTokenType.BINARYOP, "<<=");
-    public static final JLexerToken INCREMENT = new JLexerToken(ELexerTokenType.UNARYOP, "++");
-    public static final JLexerToken DECREMENT = new JLexerToken(ELexerTokenType.UNARYOP, "--");
-    public static final JLexerToken BOOL_AND = new JLexerToken(ELexerTokenType.BINARYOP, "&&");
+    public static final JLexerToken COMP_ISEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "==");
+    public static final JLexerToken COMP_NOTEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "!=");
+    public static final JLexerToken BINOP_SHIFTRIGHT = new JLexerToken(ELexerTokenType.BINARYOP, ">>");
+    public static final JLexerToken BINOP_SHIFTLEFT = new JLexerToken(ELexerTokenType.BINARYOP, "<<");
+    public static final JLexerToken ASSIGN_SHIFTRIGHT_BY = new JLexerToken(ELexerTokenType.ASSIGN, ">>=");
+    public static final JLexerToken ASSIGN_SHIFTLEFT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "<<=");
+    public static final JLexerToken ASSIGN_INCREMENT = new JLexerToken(ELexerTokenType.ASSIGN, "++");
+    public static final JLexerToken ASSIGN_DECREMENT = new JLexerToken(ELexerTokenType.ASSIGN, "--");
+    public static final JLexerToken BINOP_BOOL_AND = new JLexerToken(ELexerTokenType.BINARYOP, "&&");
     public static final JLexerToken AS_ARRAY = new JLexerToken(ELexerTokenType.UNARYOP, "[]");
-    public static final JLexerToken BOOL_OR = new JLexerToken(ELexerTokenType.BINARYOP, "||");
-    public static final JLexerToken INCREMENT_BY = new JLexerToken(ELexerTokenType.BINARYOP, "+=");
-    public static final JLexerToken DECREMENT_BY = new JLexerToken(ELexerTokenType.BINARYOP, "-=");
-    public static final JLexerToken MULT_BY = new JLexerToken(ELexerTokenType.BINARYOP, "*=");
-    public static final JLexerToken DIV_BY = new JLexerToken(ELexerTokenType.BINARYOP, "/=");
-    public static final JLexerToken MOD_OF = new JLexerToken(ELexerTokenType.BINARYOP, "%=");
-    public static final JLexerToken ASSIGNDIV = new JLexerToken(ELexerTokenType.BINARYOP, "/=");
-    public static final JLexerToken NOT = new JLexerToken(ELexerTokenType.UNARYOP, "~");
-    public static final JLexerToken XOR = new JLexerToken(ELexerTokenType.BINARYOP, "^");
-    public static final JLexerToken XOR_WITH = new JLexerToken(ELexerTokenType.BINARYOP, "^=");
-    public static final JLexerToken OR_WITH = new JLexerToken(ELexerTokenType.BINARYOP, "|=");
-    public static final JLexerToken AND_WITH = new JLexerToken(ELexerTokenType.BINARYOP, "&=");
+    public static final JLexerToken BINOP_BOOL_OR = new JLexerToken(ELexerTokenType.BINARYOP, "||");
+    public static final JLexerToken ASSIGN_INCREMENT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "+=");
+    public static final JLexerToken ASSIGN_DECREMENT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "-=");
+    public static final JLexerToken ASSIGN_MULT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "*=");
+    public static final JLexerToken ASSIGN_DIV_BY = new JLexerToken(ELexerTokenType.ASSIGN, "/=");
+    public static final JLexerToken ASSIGN_MOD_OF = new JLexerToken(ELexerTokenType.ASSIGN, "%=");
+    public static final JLexerToken UNAOP_NOT = new JLexerToken(ELexerTokenType.UNARYOP, "~");
+    public static final JLexerToken BINOP_XOR = new JLexerToken(ELexerTokenType.BINARYOP, "^");
+    public static final JLexerToken ASSIGN_XOR_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "^=");
+    public static final JLexerToken ASSIGN_OR_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "|=");
+    public static final JLexerToken ASSIGN_AND_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "&=");
     public static final JLexerToken BLOCK_BEGIN = new JLexerToken(ELexerTokenType.CODE_BLOCK, "{");
     public static final JLexerToken BLOCK_END = new JLexerToken(ELexerTokenType.CODE_BLOCK, "}");
 
@@ -165,6 +166,15 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         return new JJALPHIHelper();    
     }
 
+    private Collection<JPseudoInstruction> parseParameters(Iterator<JLexerToken> tokens) {
+        Collection<JPseudoInstruction> parametes = new LinkedList<>();
+        JLexerToken token = null;
+        while(token != PAR_CLOSE) {
+            token = consumeWhitespaces(tokens);
+        }
+        return parametes;
+    }
+
     //public static JTokenizeHelper HELPER = new JTokenizeHelper() {
     public static class JJALPHIHelper implements JTokenizeHelper{
         
@@ -194,19 +204,19 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     case "[]":
                         return AS_ARRAY;
                     case "!=":
-                        return NOTEQUAL;
+                        return COMP_NOTEQUAL;
                     case "==":
-                        return ISEQUAL;
+                        return COMP_ISEQUAL;
                     case "||":
-                        return BOOL_OR;
+                        return BINOP_BOOL_OR;
                     case "&&":
-                        return BOOL_AND;
+                        return BINOP_BOOL_AND;
                     case ">>":
-                        return SHIFTRIGHT;
+                        return BINOP_SHIFTRIGHT;
                     case "<<":
-                        return SHIFTLEFT;
+                        return BINOP_SHIFTLEFT;
                     case "++":
-                        return INCREMENT;
+                        return ASSIGN_INCREMENT;
                     case "//":
                         return LINE_COMMENT;
                     case "/*":
@@ -216,30 +226,30 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                         NextState = JLexer.E_TOKENIZER_STATE.DEFAULT;
                         return COMMENT_END;
                     case "--":
-                        return DECREMENT;
+                        return ASSIGN_DECREMENT;
                     case "+=":
-                        return INCREMENT_BY;
+                        return ASSIGN_INCREMENT_BY;
                     case "-=":
-                        return DECREMENT_BY;
+                        return ASSIGN_DECREMENT_BY;
                     case "*=":
-                        return MULT_BY;
+                        return ASSIGN_MULT_BY;
                     case "/=":
-                        return DIV_BY;
+                        return ASSIGN_DIV_BY;
                     case "^=":
-                        return XOR_WITH;
+                        return ASSIGN_XOR_WITH;
                     case "&=":
-                        return AND_WITH;
+                        return ASSIGN_AND_WITH;
                     case "|=":
-                        return OR_WITH;
+                        return ASSIGN_OR_WITH;
                     case "%=":
-                        return MOD_OF;
+                        return ASSIGN_MOD_OF;
                     default:
                         return null;
                 }
             } else if (toTokenize.length()==1) {
                 switch(toTokenize) {
                     case "!":
-                        return BOOL_NOT;
+                        return UNAOP_BOOL_NOT;
                     case ";":
                         return END_INSTRUCTION;
                     case ",":
@@ -251,7 +261,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     case ":":
                         return DECLARE;
                     case "+":
-                        return ADD;
+                        return BINOP_ADD;
                     case "(":
                         return PAR_OPEN;
                     case ")":
@@ -265,32 +275,32 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     case "}":
                         return BLOCK_END;
                     case "-":
-                        return SUB;
+                        return BINOP_SUB;
                     case "*":
-                        return MULT;
+                        return BINOP_MULT;
                     case "/":
-                        return DIV;
+                        return BINOP_DIV;
                     case "%":
-                        return MOD;
+                        return BINOP_MOD;
                     case "&":
-                        return AND;
+                        return BINOP_AND;
                     case "|":
-                        return OR;
+                        return BINOP_OR;
                     case "^":
-                        return XOR;
+                        return BINOP_XOR;
                     case ">":
-                        return GREATERTHAN;
+                        return COMP_GREATERTHAN;
                     case "<":
-                        return LESSERTHAN;
+                        return COMP_LESSERTHAN;
                     default:
                         return null;
                 }
             } else if (toTokenize.length()==1) {
                 switch(toTokenize) {
                     case "<<=":
-                        return SHIFTLEFT_BY;
+                        return ASSIGN_SHIFTLEFT_BY;
                     case ">>=":
-                        return SHIFTRIGHT_BY;
+                        return ASSIGN_SHIFTRIGHT_BY;
                     default:
                         return null;
                 }
@@ -759,23 +769,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     }
 
     /**
-     * this function is used only for test purposes
-     * 
-     * @deprecated
-     * @param source
-     * @param provider
-     * @return
-     * @throws ParseException
-     * @throws IOException
-     */
-    public JPseudoProgram parse(Reader source, VMProviderInterface provider) throws ParseException, IOException {
-        JJALPHIHelper helper = new JJALPHIHelper();
-        List<JLexerToken> tokenized = JLexer.tokenize(source, helper);
-        JPseudoProgram program=parse(tokenized.iterator(), provider);
-        return program;
-    }
-
-    /**
      * Consume all WHITESPACE tokens and return a valid token or null if the
      * iterator is consumed
      * 
@@ -808,7 +801,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         JLexerToken token = consumeWhitespaces(tokens);
         throwEndProgramExceptionIfNull(token, " while parsing parenthesis.");
         while(token!=CloseToken) {
-        
             token = consumeWhitespaces(tokens);
             throwEndProgramExceptionIfNull(token, " while parsing parenthesis.");
         }
@@ -820,6 +812,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     }
 
     private List<JPseudoInstruction> parseInstructionsBlock(Iterator<JLexerToken> tokens, VMProviderInterface provider) throws ParseException {
+        E_PARSE_STATE State = E_PARSE_STATE.PARSE_TARGET;
         if(!tokens.hasNext())
             return null;
         JLexerToken token;
@@ -828,6 +821,115 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         JPseudoInstruction baseInstruction = null;
         while((token = consumeWhitespaces(tokens))!=BLOCK_END) {
             throwEndProgramExceptionIfNull(token, "Unexpected end of program");
+            switch(State) {
+                case PARSE_TARGET:
+                    switch(token.Type) {
+                        case COMMENT_MULTILINE:
+                        case COMMENT_SINGLELINE:
+                        case WHITESPACE:
+                            break; // comments and whitespaces are ignored
+                        case ASSIGN:
+                            if(token == ASSIGN) {
+                            } else if (token == ASSIGN_AND_WITH) {
+                            } else if (token == ASSIGN_DECREMENT) {
+                            } else if (token == ASSIGN_DECREMENT_BY) {
+                            } else if (token == ASSIGN_DIV_BY) {
+                            } else if (token == ASSIGN_INCREMENT) {
+                            } else if (token == ASSIGN_INCREMENT_BY) {
+                            } else if (token == ASSIGN_MOD_OF) {
+                            } else if (token == ASSIGN_MULT_BY) {
+                            } else if (token == ASSIGN_OR_WITH) {
+                            } else if (token == ASSIGN_SHIFTLEFT_BY) {
+                            } else if (token == ASSIGN_SHIFTRIGHT_BY) {
+                            } else if (token == ASSIGN_XOR_WITH) {
+                            } else {
+                            }
+                            break;
+                        case NUMBER:
+                            throwParseException("Invalid <%s> %s at the beginning of the line: expected identifier.", token);
+                            break;
+                        case BINARYOP:
+                            if(token==BINOP_ADD) {
+                            } else if (token==BINOP_AND) {
+                            } else {
+                            }
+                            break;
+                        case UNEXPECTED:
+                            throwParseException("Unexpected symbol '"+token.Data+"'");
+                            break;
+                        case ENDCOMMAND:
+                            if(token==END_INSTRUCTION) {
+                                if(baseInstruction!=null) {
+                                    State = E_PARSE_STATE.PARSE_TARGET;
+                                    if(baseInstruction.isComplete()) {
+                                         block.add(baseInstruction); 
+                                         
+                                                
+                                    }
+                                    baseInstruction = null;
+                                }
+                            }
+                            break;
+                        case UNARYOP:
+                            break;
+                        case CODE_BLOCK:
+                            break;
+                        case SEPARATOR:
+                            break;
+                        case STRING:
+                            break;
+                        case IDENTIFIER:
+                            break;
+                        case COMPARATOR:
+                            break;
+                        case KEYWORD:
+                            break;
+                        case TOKEN:
+                            break;
+                        default:
+                            throw new AssertionError(token.Type.name());
+                    }
+                    break;
+                case PARSE_SOURCE:
+                    switch(token.Type) {
+                        case COMMENT_MULTILINE: // comments are ignored
+                        case COMMENT_SINGLELINE:
+                            break;
+                        case ASSIGN:
+                            break;
+                        case NUMBER:
+                            break;
+                        case BINARYOP:
+                            break;
+                        case WHITESPACE:
+                            break;
+                        case UNEXPECTED:
+                            break;
+                        case ENDCOMMAND:
+                            break;
+                        case UNARYOP:
+                            break;
+                        case CODE_BLOCK:
+                            break;
+                        case SEPARATOR:
+                            break;
+                        case STRING:
+                            break;
+                        case IDENTIFIER:
+                            break;
+                        case COMPARATOR:
+                            break;
+                        case KEYWORD:
+                            break;
+                        case TOKEN:
+                            break;
+                        default:
+                            throw new AssertionError(token.Type.name());
+                    }
+                    break;
+                default:
+                    throw new AssertionError(State.name());
+            }
             switch(token.Type) {
                 case COMMENT_MULTILINE: // Comments are treated as non existing
                 case COMMENT_SINGLELINE: 
@@ -837,14 +939,23 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     baseInstruction = new JPseudoInstruction(E_ACTION.ASSIGN, baseInstruction, parseExpression(tokens));
                     break;
                 case NUMBER:
-                    Object o;
-                    try { 
-                        o=Long.parseLong(token.Data);
-                    } catch (Exception e) {
-                    }
-                    instruction = new JPseudoInstruction(E_ACTION.GET_CONSTANT, token.Data);
-                    break;
+                    throwParseException("Identifier expected, <%s> %s found!");
+                    break;                            
                 case BINARYOP:
+                    if(baseInstruction==null) 
+                        throwParseException("Identifier expected, <%s> %s found!");
+                    else {
+                        if(token == DOT) {
+                            instruction = new JPseudoInstruction(E_ACTION.GET_PROPERTY, baseInstruction);
+                        } else if (token == BINOP_ADD) {
+                            instruction = new JPseudoInstruction(E_ACTION.MATH_SUM, baseInstruction);
+                        } else if (token == BINOP_AND) {
+                            instruction = new JPseudoInstruction(E_ACTION.LOGIC_AND, baseInstruction);
+                        } else if (token == BINOP_BOOL_AND) {
+                            instruction = new JPseudoInstruction(E_ACTION.BOOL_AND, baseInstruction);
+                        }
+                        baseInstruction = instruction;
+                    }
                     break;
                 case WHITESPACE:
                     break;
@@ -860,10 +971,36 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 case CODE_BLOCK:
                     break;
                 case SEPARATOR:
+                    if(token == PAR_OPEN) {
+                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
+                            baseInstruction.Action = E_ACTION.CALL_METHOD;
+                            baseInstruction.Parameters.addAll(parseParameters(tokens));
+                        } else {}
+                            
+                    } else if (token==QPAR_OPEN) {
+                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
+                            baseInstruction.Action = E_ACTION.GET_PROPERTY_ARRAY;
+                            baseInstruction.Parameters.add(parseExpression(tokens));
+                        } else {}
+                    } else
+                        throwParseException("Unexpected <%s> %s", token);
                     break;
                 case STRING:
                     break;
                 case IDENTIFIER:
+                    if(baseInstruction==null) {
+                        instruction = new JPseudoInstruction(E_ACTION.GET_IDENTIFIER, token.Data);
+                        baseInstruction = instruction;
+                    } else {
+                        if(foundWhitespace) {
+                            throwParseException("Unexpected <%s> %s after space.", token);
+                        }
+                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
+                            if(baseInstruction.Parameters.size()==1) {
+                                baseInstruction.Parameters.add(new JPseudoInstruction(E_ACTION.GET_IDENTIFIER, token.Data));
+                            }
+                        }
+                    }
                     break;
                 case COMPARATOR:
                     break;
