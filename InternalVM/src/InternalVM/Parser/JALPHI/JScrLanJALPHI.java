@@ -109,6 +109,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     public static final JLexerToken REFERENCE_THIS = new JLexerToken(ELexerTokenType.KEYWORD, "this");
     public static final JLexerToken REFERENCE_NULL = new JLexerToken(ELexerTokenType.KEYWORD, "null");
 
+    public static final JLexerToken AS = new JLexerToken(ELexerTokenType.KEYWORD, "as");
+    public static final JLexerToken IS = new JLexerToken(ELexerTokenType.KEYWORD, "is");
     public static final JLexerToken IF = new JLexerToken(ELexerTokenType.KEYWORD, "if");
     public static final JLexerToken ELSE = new JLexerToken(ELexerTokenType.KEYWORD, "else");
     public static final JLexerToken ELSE_IF = new JLexerToken(ELexerTokenType.KEYWORD, "elsif");
@@ -151,6 +153,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         addToMap (RESERVED, TYPE_OBJECT);
         addToMap (RESERVED, REFERENCE_THIS);
         addToMap (RESERVED, REFERENCE_NULL);
+        addToMap (RESERVED, IS);
+        addToMap (RESERVED, AS);
         addToMap (RESERVED, IF);
         addToMap (RESERVED, ELSE);
         addToMap (RESERVED, ELSE_IF);
