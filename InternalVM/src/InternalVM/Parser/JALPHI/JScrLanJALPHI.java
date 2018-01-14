@@ -163,6 +163,29 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         addToMap (RESERVED, BREAK);
         addToMap (RESERVED, CONTINUE);
         addToMap (RESERVED, RETURN);
+        
+        addToMap(SYMBOLS1, DOT);
+        addToMap(SYMBOLS1, DECLARE);
+        addToMap(SYMBOLS1, SEPARATE);
+        addToMap(SYMBOLS1, END_INSTRUCTION);
+        addToMap(SYMBOLS1, ASSIGN);
+        addToMap(SYMBOLS1, PAR_OPEN);
+        addToMap(SYMBOLS1, PAR_CLOSE);
+        addToMap(SYMBOLS1, COMP_GREATERTHAN);
+        addToMap(SYMBOLS1, COMP_LESSERTHAN);
+        addToMap(SYMBOLS1, QPAR_OPEN);
+        addToMap(SYMBOLS1, QPAR_CLOSE);
+        addToMap(SYMBOLS1, UNAOP_BOOL_NOT);
+        addToMap(SYMBOLS1, BINOP_ADD);
+        addToMap(SYMBOLS1, BINOP_SUB);
+        addToMap(SYMBOLS1, BINOP_MULT);
+        addToMap(SYMBOLS1, BINOP_DIV);
+        addToMap(SYMBOLS1, BINOP_MOD);
+        addToMap(SYMBOLS1, BINOP_AND);
+        addToMap(SYMBOLS1, BINOP_OR);
+
+        addToMap(SYMBOLS3, ASSIGN_SHIFTRIGHT_BY);
+        addToMap(SYMBOLS3, ASSIGN_SHIFTLEFT_BY);
     };
 
     @Override
