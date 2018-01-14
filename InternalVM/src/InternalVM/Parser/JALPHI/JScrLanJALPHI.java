@@ -248,6 +248,20 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         private final List<JLexerToken> supportList = new LinkedList<>();
 
         private JLexerToken getKnownToken(String toTokenize) {
+            if(toTokenize==null) {
+                return null;
+            } else if (toTokenize.length()==3) {
+                return SYMBOLS3.get(toTokenize);
+            } else if (toTokenize.length()==2) {
+                return SYMBOLS2.get(toTokenize);
+            } else if (toTokenize.length()==1) {
+                return SYMBOLS1.get(toTokenize);
+            } else {
+                return null;
+            }            
+        }
+            
+        private JLexerToken getKnownToken2(String toTokenize) {
             if(toTokenize==null)
                 return null;
             else if (toTokenize.length()==2) {
