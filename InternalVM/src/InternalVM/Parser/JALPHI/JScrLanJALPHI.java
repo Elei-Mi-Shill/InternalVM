@@ -183,7 +183,31 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         addToMap(SYMBOLS1, BINOP_MOD);
         addToMap(SYMBOLS1, BINOP_AND);
         addToMap(SYMBOLS1, BINOP_OR);
+        addToMap(SYMBOLS1, BLOCK_BEGIN);
+        addToMap(SYMBOLS1, BLOCK_END);
 
+        addToMap(SYMBOLS2, LINE_COMMENT);
+        addToMap(SYMBOLS2, COMMENT_START);
+        addToMap(SYMBOLS2, COMP_ISEQUAL);
+        addToMap(SYMBOLS2, COMP_NOTEQUAL);
+        addToMap(SYMBOLS2, BINOP_SHIFTRIGHT);
+        addToMap(SYMBOLS2, BINOP_SHIFTLEFT);
+        addToMap(SYMBOLS2, ASSIGN_INCREMENT);
+        addToMap(SYMBOLS2, ASSIGN_DECREMENT);
+        addToMap(SYMBOLS2, BINOP_BOOL_AND);
+        addToMap(SYMBOLS2, AS_ARRAY);
+        addToMap(SYMBOLS2, BINOP_BOOL_OR);
+        addToMap(SYMBOLS2, ASSIGN_INCREMENT_BY);
+        addToMap(SYMBOLS2, ASSIGN_DECREMENT_BY);
+        addToMap(SYMBOLS2, ASSIGN_MULT_BY);
+        addToMap(SYMBOLS2, ASSIGN_DIV_BY);
+        addToMap(SYMBOLS2, ASSIGN_MOD_OF);
+        addToMap(SYMBOLS2, UNAOP_NOT);
+        addToMap(SYMBOLS2, BINOP_XOR);
+        addToMap(SYMBOLS2, ASSIGN_XOR_WITH);
+        addToMap(SYMBOLS2, ASSIGN_OR_WITH);
+        addToMap(SYMBOLS2, ASSIGN_AND_WITH);
+    
         addToMap(SYMBOLS3, ASSIGN_SHIFTRIGHT_BY);
         addToMap(SYMBOLS3, ASSIGN_SHIFTLEFT_BY);
     };
