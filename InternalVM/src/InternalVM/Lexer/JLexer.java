@@ -37,73 +37,67 @@ public class JLexer {
         UNDEFINED, DEFAULT, STRING, IDENTIFIER, NUMBER, AGGREGABLES, WHIESPACE, COMMENT;
     }
     
-    public static List<JLexerToken> tokenize(Reader data, JTokenizeHelper helper) throws IOException, ParseException {
+    public static List<JLexerPositionalToken> tokenize(Reader data, JTokenizeHelper helper) throws IOException, ParseException {
         int total = 0;
         int line = 0;
-        int row = 0;
+        int col = 0;
         helper.reset();
-        List<JLexerToken> list = new ArrayList<>();
+        List<JLexerPositionalToken> list = new ArrayList<>();
         E_TOKENIZER_STATE State = E_TOKENIZER_STATE.DEFAULT;
         int cursorValue=data.read();
-        JLexerToken tempToken=null;
+        JLexerPositionalToken tempToken=null;
         char c;
         while(cursorValue>=0) {
-            E_TOKENIZER_STATE newState;
+            E_TOKENIZER_STATE newState= E_TOKENIZER_STATE.UNDEFINED;
             c=(char)cursorValue;
-            total++;
-            if(c == '\n' || c=='\r') {
-                line++;
-                row=0;
-            } else 
-                row++;
             switch(State) {
                 case DEFAULT:
                     if(helper.isIdentifierStart(c)) {
-                        helper.initialyzeIdentifier(c);
+                        helper.initialyzeIdentifier(c, line, col, total);
                     } else if(helper.isNumberStart(c)) {
-                        helper.initialyzeNumber(c);
+                        helper.initialyzeNumber(c, line, col, total);
                     } else if(helper.isStringStart(c)) {
-                        helper.initialyzeString(c);
+                        helper.initialyzeString(c, line, col, total);
                     } else if(helper.isAggregable(c)) {
-                        helper.initialyzeAggregable(c);
+                        helper.initialyzeAggregable(c, line, col, total);
                     } else if(helper.isWhiteSpace(c)) {
-                        helper.initialyzeWhitespace(c);
+                        helper.initialyzeWhitespace(c, line, col, total);
                     } else if(helper.isCommentStart(c)) {
-                        helper.initialyzeComment(c);
+                        helper.initialyzeComment(c, line, col, total);
                     } else {
-                        tempToken = helper.tokenizeSymbol(c);
+                        tempToken = helper.tokenizeSymbol(c, line, col, total);
                         if(tempToken!=null)
                             list.add(tempToken);
                     }
                     break;
                 case AGGREGABLES:
                     if(helper.appendAggregable(c)) {
-                        list.addAll(helper.tokenizeAggregables());
+                        list.add(helper.tokenizeAggregables());
                     }                         
                     break;
                 case STRING:
                     if(helper.appendToString(c)) {
-                        list.addAll(helper.tokenizeString());
+                        list.add(helper.tokenizeString());
                     }                         
                     break;
                 case COMMENT:
                     if(helper.appendToComment(c)) {
-                        list.addAll(helper.tokenizeComment());
+                        list.add(helper.tokenizeComment());
                     }                         
                     break;
                 case NUMBER:
                     if(helper.appendToNumber(c)) {
-                        list.addAll(helper.tokenizeNumber());
+                        list.add(helper.tokenizeNumber());
                     }                         
                     break;
                 case WHIESPACE:
                     if(helper.appendToWhiteSpace(c)) {
-                        list.addAll(helper.tokenizeWhitespace());
+                        list.add(helper.tokenizeWhitespace());
                     }                         
                     break;
                 case IDENTIFIER:
                     if(helper.appendToIdentifier(c)) {
-                        list.addAll(helper.tokenizeIdentifier());
+                        list.add(helper.tokenizeIdentifier());
                     }                         
                     break;
                 default:
@@ -111,8 +105,15 @@ public class JLexer {
             }
             if((newState = helper.continueWithState())!=E_TOKENIZER_STATE.UNDEFINED)
                 State = newState;
-            if(helper.consumeLastCharacter()) 
+            if(helper.consumeLastCharacter()) {
                 cursorValue=data.read();
+                total++;
+                if((char)cursorValue == '\n' || (char)cursorValue=='\r') {
+                    line++;
+                    col=0;
+                } else 
+                    col++;
+            }
         }
         if(State != E_TOKENIZER_STATE.DEFAULT) {
             throw new ParseException("Unexpected end of file!", -1);
@@ -120,7 +121,7 @@ public class JLexer {
         return list;
     }
     
-    public static List<JLexerToken> tokenize(String data, JTokenizeHelper helper) throws ParseException, IOException {
+    public static List<JLexerPositionalToken> tokenize(String data, JTokenizeHelper helper) throws ParseException, IOException {
         return tokenize(new StringReader(data), helper);
     }
 }

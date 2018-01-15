@@ -178,7 +178,7 @@ public class JPseudoInstruction {
                 return Parameters.isEmpty() && (Value!=null);
             case GET_CONSTANT_FLOAT:
                 return Parameters.isEmpty() && (Value!=null);
-            case GET_IDENTIFIER:
+            case GET_OBJECT:
                 return Parameters.isEmpty() && (Value!=null);
             default:
                 throw new AssertionError(Action.name());

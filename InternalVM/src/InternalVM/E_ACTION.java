@@ -112,7 +112,7 @@ public enum E_ACTION {
      * this function returns an identifier
      * @param Value String containing the identifier name
      */
-    GET_IDENTIFIER, 
+    GET_OBJECT, 
     GET_NULL; 
 
 }

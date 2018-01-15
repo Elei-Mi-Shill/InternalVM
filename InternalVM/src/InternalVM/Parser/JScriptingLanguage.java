@@ -5,7 +5,7 @@
  */
 package InternalVM.Parser;
 
-import InternalVM.Lexer.JLexerToken;
+import InternalVM.Lexer.JLexerPositionalToken;
 import InternalVM.Lexer.JTokenizeHelper;
 import InternalVM.Parser.JALPHI.JScrLanJALPHI;
 import JScriptParser.VMProviderInterface;
@@ -23,6 +23,6 @@ public abstract class JScriptingLanguage {
     public abstract String getName();
     public abstract double getRevision();
     public abstract JTokenizeHelper getHelper();
-    public abstract JPseudoProgram parse(Iterator<JLexerToken> tokens, VMProviderInterface provider) throws ParseException;
+    public abstract JPseudoProgram parse(Iterator<JLexerPositionalToken> tokens, VMProviderInterface provider) throws ParseException;
     
 }

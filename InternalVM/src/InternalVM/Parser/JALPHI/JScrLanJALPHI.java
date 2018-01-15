@@ -5,11 +5,14 @@
  */
 package InternalVM.Parser.JALPHI;
 
+import InternalVM.Compiler.JVMExceptionBuilder;
 import JScriptParser.E_ACTION;
 import JScriptParser.E_CODE_TYPE;
 import JScriptParser.E_VAR_TYPE;
 import InternalVM.Lexer.ELexerTokenType;
+import InternalVM.Lexer.JDocumentPosition;
 import InternalVM.Lexer.JLexer;
+import InternalVM.Lexer.JLexerPositionalToken;
 import InternalVM.Lexer.JLexerToken;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ import InternalVM.Parser.JPseudoProgram;
 import InternalVM.Parser.JPseudoType;
 import InternalVM.Parser.JScriptingLanguage;
 import JScriptParser.VMProviderInterface;
+import com.sun.istack.internal.logging.Logger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -47,6 +51,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     /**
      * ":" is used in variable and argument declarations
      */
+    public static final JLexerToken UNAOP_TOKEN_START = new JLexerToken(ELexerTokenType.UNARYOP, "@");
     public static final JLexerToken DOT = new JLexerToken(ELexerTokenType.BINARYOP, ".");
     public static final JLexerToken DECLARE = new JLexerToken(ELexerTokenType.ASSIGN, ":");
     public static final JLexerToken SEPARATE = new JLexerToken(ELexerTokenType.SEPARATOR, ",");
@@ -185,6 +190,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         addToMap(SYMBOLS1, BINOP_OR);
         addToMap(SYMBOLS1, BLOCK_BEGIN);
         addToMap(SYMBOLS1, BLOCK_END);
+        addToMap(SYMBOLS1, UNAOP_TOKEN_START);
 
         addToMap(SYMBOLS2, LINE_COMMENT);
         addToMap(SYMBOLS2, COMMENT_START);
@@ -217,16 +223,15 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         return new JJALPHIHelper();    
     }
 
-    private Collection<JPseudoInstruction> parseParameters(Iterator<JLexerToken> tokens) {
+    private Collection<JPseudoInstruction> parseParameters(Iterator<JLexerPositionalToken> tokens) {
         Collection<JPseudoInstruction> parametes = new LinkedList<>();
-        JLexerToken token = null;
-        while(token != PAR_CLOSE) {
+        JLexerPositionalToken token = null;
+        while(token.Token != PAR_CLOSE) {
             token = consumeWhitespaces(tokens);
         }
         return parametes;
     }
 
-    //public static JTokenizeHelper HELPER = new JTokenizeHelper() {
     public static class JJALPHIHelper implements JTokenizeHelper{
         
         private StringBuilder sb = null;
@@ -245,7 +250,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         private boolean FirstAfterExponent;
         private int CommentType;
         
-        private final List<JLexerToken> supportList = new LinkedList<>();
+        private final List<JLexerPositionalToken> supportList = new LinkedList<>();
+        private JDocumentPosition Pos;
 
         private JLexerToken getKnownToken(String toTokenize) {
             if(toTokenize==null) {
@@ -313,6 +319,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 }
             } else if (toTokenize.length()==1) {
                 switch(toTokenize) {
+                    case "@":
+                        return UNAOP_TOKEN_START;
                     case "!":
                         return UNAOP_BOOL_NOT;
                     case ";":
@@ -390,29 +398,31 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public Collection<JLexerToken> tokenizeIdentifier() throws ParseException {
+        public JLexerPositionalToken tokenizeIdentifier() throws ParseException {
             supportList.clear();
             String s = sb.toString();
             sb=null;
             JLexerToken tempToken = RESERVED.get(s);
             if(tempToken==null) {
-                if(s.charAt(0)=='@') 
-                    supportList.add( new JLexerToken(ELexerTokenType.TOKEN, s.substring(1)));
+                if(s.charAt(0)=='@')
+                    tempToken = new JLexerToken(ELexerTokenType.TOKEN, s.substring(1));
                 else
-                    supportList.add(new JLexerToken(ELexerTokenType.IDENTIFIER, s));
-            } else supportList.add(tempToken);
-            return Collections.unmodifiableCollection(supportList);
+                    tempToken = new JLexerToken(ELexerTokenType.IDENTIFIER, s);
+            } 
+            if(tempToken!=null)
+                return new JLexerPositionalToken(tempToken, Pos);
+            else return null;
         }
 
         @Override
-        public JLexerToken tokenizeSymbol(char symbol) throws ParseException {
+        public JLexerPositionalToken tokenizeSymbol(char symbol, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             String s=""+symbol;
             JLexerToken tempToken = getKnownToken(s);
             if(tempToken==null) {
-                throw new ParseException("Unexpected character 0x"+Integer.toHexString(symbol)+" ("+symbol+")",-1);
-                //return new JLexerToken(ELexerTokenType.UNEXPECTED, s);
+                throw JVMExceptionBuilder.buildException("Unexpected character 0x"+Integer.toHexString(symbol)+" ("+symbol+")", Pos, -1);
             }
-            return tempToken;
+            return new JLexerPositionalToken(tempToken, Pos);
         }
 
         @Override
@@ -440,7 +450,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeAggregable(char c) {
+        public void initialyzeAggregable(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             sb = new StringBuilder();
             sb.append(c);
             ConsumeChar = true;
@@ -453,19 +464,22 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 ConsumeChar=true;
                 NextState = JLexer.E_TOKENIZER_STATE.AGGREGABLES;
                 sb.append(c);
-                if(sb.length()>=2) {
-                    String testComment = sb.substring(sb.length()-2, sb.length());
-                    if(testComment.equals(COMMENT_START.Data)) {
-                        sb.delete(sb.length()-2, sb.length());
-                        NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
-                        CommentType = 2;
-                        return true;
-                    } else if(testComment.equals(LINE_COMMENT.Data)) {
-                        sb.delete(sb.length()-2, sb.length());
-                        NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
-                        CommentType = 1;
-                        return true;
-                    }
+                JLexerToken token = getKnownToken(sb.toString());
+                if(token == COMMENT_START) {
+                    sb.delete(sb.length()-2, sb.length());
+                    NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
+                    CommentType = 2;
+                    return false;
+                } else if(token == LINE_COMMENT) {
+                    sb.delete(sb.length()-2, sb.length());
+                    NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
+                    CommentType = 1;
+                    return false;
+                } else if(token == null) {
+                    sb.delete(sb.length()-1, sb.length());
+                    NextState = JLexer.E_TOKENIZER_STATE.DEFAULT;
+                    ConsumeChar = false;
+                    return true;
                 }
                 return false;
             } else {
@@ -481,7 +495,15 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public Collection<JLexerToken> tokenizeAggregables() throws ParseException {
+        public JLexerPositionalToken tokenizeAggregables() throws ParseException {
+            JLexerToken tempToken = getKnownToken(sb.toString());
+            if(tempToken==null) throw JVMExceptionBuilder.buildException("String \""+sb.toString()+"\" unexpectedly produced an invalid aggregable token!", Pos, -1);
+            JLexerPositionalToken temp = new JLexerPositionalToken(tempToken, Pos);
+            clearInternalVariables();
+            return temp;
+        }
+        
+        public Collection<JLexerPositionalToken> tokenizeAggregables2() throws ParseException {
             String aggregate = sb.toString();
             sb=new StringBuilder();
             supportList.clear();
@@ -516,7 +538,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                         }
                     } else {
                         searching = false;                    
-                        supportList.add(tempToken);
+                        supportList.add(new JLexerPositionalToken(tempToken, Pos));
                     }
                 }
                 i+=temp.length();
@@ -579,7 +601,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeIdentifier(char c) throws ParseException {
+        public void initialyzeIdentifier(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             sb = new StringBuilder();
             sb.append(c);
             ConsumeChar = true;
@@ -587,18 +610,20 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeString(char c) throws ParseException {
+        public void initialyzeString(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             sb = new StringBuilder();
             ConsumeChar = true;
             NextState = JLexer.E_TOKENIZER_STATE.STRING;
         }
 
         @Override
-        public Collection<JLexerToken> tokenizeString() throws ParseException {
-            supportList.clear();
-            supportList.add(new JLexerToken(ELexerTokenType.STRING, sb.toString()));
-            sb=null;
-            return Collections.unmodifiableCollection(supportList);
+        public JLexerPositionalToken tokenizeString() throws ParseException {
+            JLexerPositionalToken tempToken = new JLexerPositionalToken(
+                    new JLexerToken(ELexerTokenType.STRING, sb.toString())
+                    ,Pos);
+            clearInternalVariables();
+            return tempToken;
         }
 
         @Override
@@ -615,16 +640,16 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeWhitespace(char c) {
+        public void initialyzeWhitespace(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
+            sb = null;
             ConsumeChar = true;
             NextState = JLexer.E_TOKENIZER_STATE.WHIESPACE;
         }
 
         @Override
-        public List<JLexerToken> tokenizeWhitespace() {
-            supportList.clear();
-            supportList.add(WHITESPACE);
-            return Collections.unmodifiableList(supportList);
+        public JLexerPositionalToken tokenizeWhitespace() {
+            return new JLexerPositionalToken(WHITESPACE, Pos);
         }
 
         @Override
@@ -642,7 +667,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeNumber(char c) {
+        public void initialyzeNumber(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             sb = new StringBuilder();
             sb.append(c);
             HasExponent = false;
@@ -652,11 +678,12 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public Collection<JLexerToken> tokenizeNumber() {
-            supportList.clear();
-            supportList.add(new JLexerToken(ELexerTokenType.NUMBER, sb.toString()));
-            sb=null;
-            return Collections.unmodifiableCollection(supportList);
+        public JLexerPositionalToken tokenizeNumber() {
+            return new JLexerPositionalToken(
+                    new JLexerToken(
+                            ELexerTokenType.NUMBER, sb.toString()
+                    ), Pos
+            );
         }
 
         @Override
@@ -734,22 +761,18 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public Collection<JLexerToken> tokenizeComment()  throws ParseException {
-            supportList.clear();
+        public JLexerPositionalToken tokenizeComment() throws ParseException {
             switch (CommentType) {
                 case 2:
                     CommentType = 0;
-                    supportList.add(new JLexerToken(ELexerTokenType.COMMENT_MULTILINE, sb.toString()));
-                    break;
+                    return new JLexerPositionalToken(new JLexerToken(ELexerTokenType.COMMENT_MULTILINE, sb.toString()),Pos);
                 case 1:
                     CommentType = 0;
-                    supportList.add(new JLexerToken(ELexerTokenType.COMMENT_SINGLELINE, sb.toString()));
-                    break;
+                    return new JLexerPositionalToken(new JLexerToken(ELexerTokenType.COMMENT_SINGLELINE, sb.toString()),Pos);
                 default:
                     throw new ParseException("Unknown comment type "+CommentType, -1);
             
             }
-            return Collections.unmodifiableCollection(supportList);
         }
 
         // no one character comment 
@@ -759,8 +782,14 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
 
         @Override
-        public void initialyzeComment(char c) throws ParseException {
+        public void initialyzeComment(char c, int row, int col, int absolute) throws ParseException {
+            Pos = new JDocumentPosition(absolute, row, col);
             sb=new StringBuilder();
+        }
+
+        private void clearInternalVariables() {
+            sb = null;
+            Pos = null;
         }
     };
 
@@ -770,8 +799,11 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     private int Size;
     private int Cursor;
     private char c;
+    private int Scope = 0;
+    
     
     private static final String[] PREPROCESSOR = new String[] {IMPORT.Data};
+    
     private static final String[] CODE_TYPES = new String[] {
         FRAGMENT.Data, EVENT.Data, FUNCTION.Data
     };
@@ -843,15 +875,15 @@ public class JScrLanJALPHI extends JScriptingLanguage {
      * @param tokens iterator containing the tokens
      * @return a non WHITESPACE token or 
      */
-    public JLexerToken consumeWhitespaces(Iterator<JLexerToken> tokens) {
+    public JLexerPositionalToken consumeWhitespaces(Iterator<JLexerPositionalToken> tokens) {
         foundWhitespace = false;
-        JLexerToken token = tokens.next();
-        while(token.Type == ELexerTokenType.WHITESPACE) {
+        JLexerPositionalToken item = tokens.next();
+        while(item.Token.Type == ELexerTokenType.WHITESPACE) {
             foundWhitespace = true;
             if(!tokens.hasNext()) return null;
-            token = tokens.next();
+            item = tokens.next();
         }
-        return token;
+        return item;
     }
     
     private void throwParseException(String message) throws ParseException {
@@ -862,53 +894,42 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         throw new ParseException(String.format(message,new Object[] { Token.Type.name(), Token.Data }), -1);
     }
     
-    private JPseudoInstruction parseParentesis(Iterator<JLexerToken> tokens, JLexerToken CloseToken) throws ParseException {
-        JLexerToken token = consumeWhitespaces(tokens);
-        throwEndProgramExceptionIfNull(token, " while parsing parenthesis.");
-        while(token!=CloseToken) {
+    private JPseudoInstruction parseParentesis(Iterator<JLexerPositionalToken> tokens, JLexerToken CloseToken) throws ParseException {
+        JLexerPositionalToken token = consumeWhitespaces(tokens);
+        throwEndProgramExceptionIfNull(token.Token, " while parsing parenthesis.");
+        while(token.Token!=CloseToken) {
             token = consumeWhitespaces(tokens);
-            throwEndProgramExceptionIfNull(token, " while parsing parenthesis.");
+            throwEndProgramExceptionIfNull(token.Token, " while parsing parenthesis.");
         }
         return null;
     }
 
-    private JPseudoInstruction parseExpression(Iterator<JLexerToken> tokens) {
+    private JPseudoInstruction parseExpression(Iterator<JLexerPositionalToken> tokens) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private List<JPseudoInstruction> parseInstructionsBlock(Iterator<JLexerToken> tokens, VMProviderInterface provider) throws ParseException {
-        E_PARSE_STATE State = E_PARSE_STATE.PARSE_TARGET;
-        if(!tokens.hasNext())
-            return null;
-        JLexerToken token;
+    private List<JPseudoInstruction> parseInstructionsBlock(Iterator<JLexerPositionalToken> tokens, VMProviderInterface provider) throws ParseException {
+        Scope++;
+        int MyScope = Scope;
+        
+        E_PARSE_STATE State = E_PARSE_STATE.FIND_TARGET;
+        JLexerPositionalToken item=consumeWhitespaces(tokens);
+        if(item==null)
+            throw new ParseException("Unexpected end of file!",-1);
         List<JPseudoInstruction> block = new LinkedList<>();
         JPseudoInstruction instruction = null;
         JPseudoInstruction baseInstruction = null;
-        while((token = consumeWhitespaces(tokens))!=BLOCK_END) {
-            throwEndProgramExceptionIfNull(token, "Unexpected end of program");
+        while(!tokens.hasNext()) {
+            item = tokens.next();
+            JLexerToken token = item.Token;
             switch(State) {
-                case PARSE_TARGET:
+                case FIND_TARGET:
                     switch(token.Type) {
                         case COMMENT_MULTILINE:
                         case COMMENT_SINGLELINE:
                         case WHITESPACE:
                             break; // comments and whitespaces are ignored
                         case ASSIGN:
-                            if(token == ASSIGN) {
-                            } else if (token == ASSIGN_AND_WITH) {
-                            } else if (token == ASSIGN_DECREMENT) {
-                            } else if (token == ASSIGN_DECREMENT_BY) {
-                            } else if (token == ASSIGN_DIV_BY) {
-                            } else if (token == ASSIGN_INCREMENT) {
-                            } else if (token == ASSIGN_INCREMENT_BY) {
-                            } else if (token == ASSIGN_MOD_OF) {
-                            } else if (token == ASSIGN_MULT_BY) {
-                            } else if (token == ASSIGN_OR_WITH) {
-                            } else if (token == ASSIGN_SHIFTLEFT_BY) {
-                            } else if (token == ASSIGN_SHIFTRIGHT_BY) {
-                            } else if (token == ASSIGN_XOR_WITH) {
-                            } else {
-                            }
                             break;
                         case NUMBER:
                             throwParseException("Invalid <%s> %s at the beginning of the line: expected identifier.", token);
@@ -925,7 +946,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                         case ENDCOMMAND:
                             if(token==END_INSTRUCTION) {
                                 if(baseInstruction!=null) {
-                                    State = E_PARSE_STATE.PARSE_TARGET;
+                                    State = E_PARSE_STATE.FIND_TARGET;
                                     if(baseInstruction.isComplete()) {
                                          block.add(baseInstruction); 
                                          
@@ -944,6 +965,11 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                         case STRING:
                             break;
                         case IDENTIFIER:
+                            State = E_PARSE_STATE.HAS_TARGET_IDENTIFIER;
+                            if(baseInstruction!=null) {
+                                throw new IllegalAccessError("Identifier already assigned before identifier found!");
+                            }
+                            baseInstruction = new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data);
                             break;
                         case COMPARATOR:
                             break;
@@ -955,6 +981,43 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                             throw new AssertionError(token.Type.name());
                     }
                     break;
+                case HAS_TARGET_IDENTIFIER:
+                    switch(token.Type) {
+                        case ASSIGN:
+                            break;
+                        case NUMBER:
+                            break;
+                        case BINARYOP:
+                            break;
+                        case WHITESPACE:
+                            break;
+                        case UNEXPECTED:
+                            break;
+                        case ENDCOMMAND:
+                            break;
+                        case UNARYOP:
+                            break;
+                        case CODE_BLOCK:
+                            break;
+                        case SEPARATOR:
+                            break;
+                        case STRING:
+                            break;
+                        case IDENTIFIER:
+                            break;
+                        case COMPARATOR:
+                            break;
+                        case KEYWORD:
+                            break;
+                        case TOKEN:
+                            break;
+                        case COMMENT_MULTILINE:
+                        case COMMENT_SINGLELINE:
+                            break;
+                        default:
+                    throw new AssertionError(token.Type.name());
+                    }
+                    break;                                                
                 case PARSE_SOURCE:
                     switch(token.Type) {
                         case COMMENT_MULTILINE: // comments are ignored
@@ -1054,7 +1117,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     break;
                 case IDENTIFIER:
                     if(baseInstruction==null) {
-                        instruction = new JPseudoInstruction(E_ACTION.GET_IDENTIFIER, token.Data);
+                        instruction = new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data);
                         baseInstruction = instruction;
                     } else {
                         if(foundWhitespace) {
@@ -1062,7 +1125,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                         }
                         if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
                             if(baseInstruction.Parameters.size()==1) {
-                                baseInstruction.Parameters.add(new JPseudoInstruction(E_ACTION.GET_IDENTIFIER, token.Data));
+                                baseInstruction.Parameters.add(new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data));
                             }
                         }
                     }
@@ -1077,7 +1140,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     throw new AssertionError(token.Type.name());
             }
         }
-        return block;
+        throw new ParseException("Unexpected end of program!", -1);
     }
 
     private void throwEndProgramExceptionIfNull(JLexerToken token, String qualifier) throws ParseException {
@@ -1089,23 +1152,38 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         }
     }
     
-    private List<JPseudoVariable> parseArguments(Iterator<JLexerToken> tokens)  throws ParseException {
+    private List<JPseudoVariable> parseArguments(Iterator<JLexerPositionalToken> tokens)  throws ParseException {
         List<JPseudoVariable> result = new ArrayList<>();
+        JLexerPositionalToken item = null;
         JLexerToken token = null;
         boolean working = true; 
         while(token != PAR_CLOSE) {
-            token = consumeWhitespaces(tokens);
+            item = consumeWhitespaces(tokens);
+            if(item!=null)
+                token = item.Token;
+            else
+                token = null;
             throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
             if(token.Type == ELexerTokenType.IDENTIFIER) {
                 boolean isArray=false;
                 String identifier = token.Data;
                 E_VAR_TYPE type = null;
                 String subType=null;
-                token = consumeWhitespaces(tokens);
-                throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
-                if(token == DECLARE) {
-                    token = consumeWhitespaces(tokens);
+                item = consumeWhitespaces(tokens);
+                if(item == null) {
+                    token = null;
                     throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                } else {
+                    token = item.Token;
+                }
+                if(token == DECLARE) {
+                    item = consumeWhitespaces(tokens);
+                    if(item==null) {
+                        token=null;
+                        throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                    } else {
+                        token = item.Token;
+                    }
                     if(token==TYPE_INTEGER) {
                         type = E_VAR_TYPE.INTEGER;
                     } else if (token == TYPE_FLOAT) {
@@ -1119,19 +1197,30 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     } else if (token == TYPE_OBJECT) {
                         type = E_VAR_TYPE.OBJ;
                     } else throwParseException("Expected type, found <%s> %s.", token);
-                    token = consumeWhitespaces(tokens);
-                    throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                    item = consumeWhitespaces(tokens);
+                    if(item==null) {
+                        token=null;
+                        throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                    } else {
+                        token = item.Token;
+                    }
                     if(token==DOT) {
                         if(foundWhitespace)
                             throwParseException("Unexpected dot punctation '.' after a space");
                         if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.TOKEN) {
                             if(!tokens.hasNext()) 
                                 throwParseException("Unexpected end of file while parsing fragment arguments");
-                            token = tokens.next();
+                            item = tokens.next();
+                            token = item.Token;
                             if(token.Type == ELexerTokenType.IDENTIFIER) {
                                 subType = token.Data;
-                                token = consumeWhitespaces(tokens);
-                                throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                                item = consumeWhitespaces(tokens);
+                                if(item==null) {
+                                    token=null;
+                                    throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                                } else {
+                                    token = item.Token;
+                                }
                             } else  {
                                 throwParseException("Unexpected <%s> %s instead of subtype identifier");
                             }
@@ -1144,8 +1233,13 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     }
                     if(token==AS_ARRAY) {
                         isArray=true;
-                        token = consumeWhitespaces(tokens);
-                        throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                        item = consumeWhitespaces(tokens);
+                        if(item==null) {
+                            token=null;
+                            throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                        } else {
+                            token = item.Token;
+                        }
                     }
                     if((token==SEPARATE || token == PAR_CLOSE)) {
                         result.add(new JPseudoVariable(identifier, JPseudoType.createType(type, subType, isArray)));
@@ -1159,13 +1253,14 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         return result;
     }
     
-    private JPseudoProgram parseProgramIntestation(Iterator<JLexerToken> tokens, VMProviderInterface Provider) throws ParseException {
+    private JPseudoProgram parseProgramIntestation(Iterator<JLexerPositionalToken> tokens, VMProviderInterface Provider) throws ParseException {
         if(!tokens.hasNext())
             return null;
         JPseudoProgram program = new JPseudoProgram();
-        JLexerToken token = consumeWhitespaces(tokens);
-        if(token == null)
+        JLexerPositionalToken item = consumeWhitespaces(tokens);
+        if(item == null)
             return null;
+        JLexerToken token = item.Token;
         if(token.Type==ELexerTokenType.KEYWORD) {
             if(token==PROGRAM) {
                 program.setType(E_CODE_TYPE.PROGRAM);
@@ -1178,17 +1273,21 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             } else if(token==FUNCTION) {
                 program.setType(E_CODE_TYPE.FUNCTION);
             } else
-                throwParseException("Invalid "+token.Type.name()+"<"+token.Data+">, expected Fragment|Event keyword");
-        } else throwParseException("Invalid "+token.Type.name()+"<"+token.Data+">, expected Fragment|Event <KEYWORD>");
-        token = consumeWhitespaces(tokens);
-        throwEndProgramExceptionIfNull(token," missing name!");
+                throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
+        } else throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
+        item = consumeWhitespaces(tokens);
+        if(item == null)
+            throw JVMExceptionBuilder.buildEOFException("No fragment name found", -1);
+        token = item.Token;
         if(token.Type==ELexerTokenType.IDENTIFIER) {
             program.setName(token.Data);
         } else {
-            throwParseException("Invalid "+token.Type.name()+"<"+token.Data+">, expected <IDENTIFIER>");
+            throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <IDENTIFIER> at ({1},{2})", item, -1);
         }
-        token = consumeWhitespaces(tokens);
-        throwEndProgramExceptionIfNull(token, " before parameters list");
+        item = consumeWhitespaces(tokens);
+        if(item == null)
+            throw JVMExceptionBuilder.buildEOFException("No parameters list found", -1);
+        token = item.Token;
         if(token == PAR_OPEN) {
             parseArguments(tokens).forEach(argument -> {
                 program.addArgument(argument);
@@ -1196,11 +1295,21 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         } else {
             throwParseException("Expected '(', found <"+token.Type.name()+"> "+token.Data);
         }
-        token = consumeWhitespaces(tokens);
-        throwEndProgramExceptionIfNull(token, " before parameters list");
+        item = consumeWhitespaces(tokens);
+        if(item==null) {
+            token=null;
+            throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+        } else {
+            token = item.Token;
+        }
         if (token == DECLARE) {
-            token = consumeWhitespaces(tokens);
-            throwEndProgramExceptionIfNull(token, " before parameters list");
+            item = consumeWhitespaces(tokens);
+            if(item==null) {
+                token = null;
+                throwEndProgramExceptionIfNull(token, " before parameters list");
+            } else {
+                token = item.Token;
+            }
             String subType=null;
             boolean isArray=false;
             E_VAR_TYPE type=null;
@@ -1217,14 +1326,24 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             } else if (token == TYPE_OBJECT) {
                 type = E_VAR_TYPE.OBJ;
             } else throwParseException("Expected type, found <%s> %s.", token);
-            token = consumeWhitespaces(tokens);
-            throwEndProgramExceptionIfNull(token, " while looking for return type");
+            item = consumeWhitespaces(tokens);
+            if(item==null) {
+                token = null;
+                throwEndProgramExceptionIfNull(token, " before parameters list");
+            } else {
+                token = item.Token;
+            }
             if(token==DOT) {
                 if(foundWhitespace) {
                     throwParseException("Found space before separator dot . ");
                 } else {
-                    token = consumeWhitespaces(tokens);
-                    throwEndProgramExceptionIfNull(token, " while looking for return type");
+                    item = consumeWhitespaces(tokens);
+                    if(item==null) {
+                        token = null;
+                        throwEndProgramExceptionIfNull(token, " before parameters list");
+                    } else {
+                        token = item.Token;
+                    }
                     if(token.Type==ELexerTokenType.IDENTIFIER) {
                     } else throwParseException("", token);
                 }
@@ -1233,8 +1352,13 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 if(program.getType()==E_CODE_TYPE.FUNCTION) {
                     isArray=true;
                 } else throw new ParseException(program.getType().name()+" can't return an array type.",-1);
-                token = consumeWhitespaces(tokens);
-                throwEndProgramExceptionIfNull(token, " while looking for return type");
+                item = consumeWhitespaces(tokens);
+                if(item==null) {
+                    token = null;
+                    throwEndProgramExceptionIfNull(token, " before parameters list");
+                } else {
+                    token = item.Token;
+                }
             }
             program.setReturnType(JPseudoType.createType(type, subType, isArray));
         }
@@ -1245,21 +1369,20 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             return null;
         }
     }
-    
-    
+        
     @Override
-    public JPseudoProgram parse(Iterator<JLexerToken> tokens, VMProviderInterface provider) throws ParseException {
+    public JPseudoProgram parse(Iterator<JLexerPositionalToken> tokens, VMProviderInterface provider) throws ParseException {
         JPseudoProgram program;
         program = parseProgramIntestation(tokens, provider);
         program.addInstructions(parseInstructionsBlock(tokens, provider));
-        JLexerToken token = consumeWhitespaces(tokens);
+        JLexerPositionalToken token = consumeWhitespaces(tokens);
         if(token!=null)
-            throwParseException("Unexpected <%s> %s after the end of the program!", token);
+            throwParseException("Unexpected <%s> %s after the end of the program!", token.Token);
         return program;
     }
 
     private enum E_PARSE_STATE {
-        SEARCH_INSTRUCTION, EXPECT_FUNCTION, PARSE_TARGET, PARSE_SOURCE;
+        SEARCH_INSTRUCTION, EXPECT_FUNCTION, FIND_TARGET, PARSE_SOURCE, HAS_TARGET_IDENTIFIER;
     }
     
 }

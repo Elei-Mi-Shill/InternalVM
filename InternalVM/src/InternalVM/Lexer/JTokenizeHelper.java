@@ -6,9 +6,7 @@
 package InternalVM.Lexer;
 
 import java.text.ParseException;
-import java.util.List;
 import InternalVM.Lexer.JLexer.E_TOKENIZER_STATE;
-import java.util.Collection;
 
 /**
  *
@@ -153,19 +151,24 @@ public abstract interface JTokenizeHelper {
      * 
      * initialyzeXXXX class functions can change both consumeLastCharacter() and
      * continueWithState() return values
+     * @param c
+     * @param row
+     * @param col
+     * @param absolute
+     * @throws java.text.ParseException
      */ 
     
-    public abstract void initialyzeAggregable(char c) throws ParseException;
+    public abstract void initialyzeAggregable(char c, int row, int col, int absolute) throws ParseException;
 
-    public abstract void initialyzeWhitespace(char c) throws ParseException;
+    public abstract void initialyzeWhitespace(char c, int row, int col, int absolute) throws ParseException;
 
-    public abstract void initialyzeNumber(char c) throws ParseException;
+    public abstract void initialyzeNumber(char c, int row, int col, int absolute) throws ParseException;
 
-    public abstract void initialyzeIdentifier(char c) throws ParseException;
+    public abstract void initialyzeIdentifier(char c, int row, int col, int absolute) throws ParseException;
 
-    public abstract void initialyzeString(char c)  throws ParseException;
+    public abstract void initialyzeString(char c, int row, int col, int absolute)  throws ParseException;
 
-    public void initialyzeComment(char c) throws ParseException;
+    public void initialyzeComment(char c, int row, int col, int absolute) throws ParseException;
     
     /**
      * appendToXXXX class functions
@@ -245,10 +248,13 @@ public abstract interface JTokenizeHelper {
      * single character that is not part of aggregables, is not a valid digit or
      * a identifier character or a whitespace either
      * @param symbol symbol to tokenyze
+     * @param row   used in parser phase, is the row of the token start in the original document
+     * @param col
+     * @param absolute
      * @return
      * @throws ParseException
      */
-    public abstract JLexerToken tokenizeSymbol(char symbol) throws ParseException;
+    public abstract JLexerPositionalToken tokenizeSymbol(char symbol, int row, int col, int absolute) throws ParseException;
 
     /**
      * returns a list of special character sequence, like >= or != in token
@@ -258,7 +264,7 @@ public abstract interface JTokenizeHelper {
      * @throws ParseException
      */
     
-    public abstract Collection<JLexerToken> tokenizeAggregables() throws ParseException;
+    public abstract JLexerPositionalToken tokenizeAggregables() throws ParseException;
     /**
      * returns a valid identifier: the identifier will be a reserved word or a 
      * generic identifier; note that those symbols can be aggregated or can be
@@ -269,15 +275,15 @@ public abstract interface JTokenizeHelper {
      * @return valid identifier
      * @throws ParseException
      */
-    public abstract Collection<JLexerToken> tokenizeIdentifier() throws ParseException;
+    public abstract JLexerPositionalToken tokenizeIdentifier() throws ParseException;
 
-    public abstract Collection<JLexerToken> tokenizeNumber() throws ParseException;
+    public abstract JLexerPositionalToken tokenizeNumber() throws ParseException;
     
-    public abstract Collection<JLexerToken> tokenizeWhitespace() throws ParseException;
+    public abstract JLexerPositionalToken tokenizeWhitespace() throws ParseException;
 
-    public abstract Collection<JLexerToken> tokenizeString() throws ParseException;
+    public abstract JLexerPositionalToken tokenizeString() throws ParseException;
 
-    public abstract Collection<JLexerToken> tokenizeComment() throws ParseException;;
+    public abstract JLexerPositionalToken tokenizeComment() throws ParseException;
 
 
 }

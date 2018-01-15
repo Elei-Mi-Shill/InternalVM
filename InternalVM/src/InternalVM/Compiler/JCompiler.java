@@ -7,6 +7,7 @@ package InternalVM.Compiler;
 
 import JScriptParser.JAssembly;
 import InternalVM.Lexer.JLexer;
+import InternalVM.Lexer.JLexerPositionalToken;
 import InternalVM.Lexer.JLexerToken;
 import InternalVM.Parser.JPseudoProgram;
 import InternalVM.Parser.JScriptingLanguage;
@@ -106,7 +107,7 @@ public class JCompiler {
      * @throws java.text.ParseException
      */
     public static JAssembly compile(VMProviderInterface Provider, String source , JScriptingLanguage Language) throws ParseException, IOException {
-        List<JLexerToken> tokens = JLexer.tokenize(new StringReader(source), Language.getHelper());
+        List<JLexerPositionalToken> tokens = JLexer.tokenize(new StringReader(source), Language.getHelper());
         JPseudoProgram tempProgram = Language.parse(tokens.iterator(), Provider);
         return null;
     }
