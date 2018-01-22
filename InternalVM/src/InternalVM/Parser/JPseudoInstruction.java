@@ -5,7 +5,7 @@
  */
 package InternalVM.Parser;
 
-import JScriptParser.E_ACTION;
+import InternalVM.E_ACTION;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +32,7 @@ public class JPseudoInstruction {
     public E_ACTION Action;
     public List<JPseudoInstruction> Parameters;
     
-    JPseudoInstruction(E_ACTION action) {
+    public JPseudoInstruction(E_ACTION action) {
         Action = action;
         Value = null;
         Parameters = new ArrayList<>();

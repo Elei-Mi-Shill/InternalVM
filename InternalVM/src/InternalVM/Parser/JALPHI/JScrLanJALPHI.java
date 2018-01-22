@@ -6,9 +6,9 @@
 package InternalVM.Parser.JALPHI;
 
 import InternalVM.Compiler.JVMExceptionBuilder;
-import JScriptParser.E_ACTION;
-import JScriptParser.E_CODE_TYPE;
-import JScriptParser.E_VAR_TYPE;
+import InternalVM.E_ACTION;
+import InternalVM.E_CODE_TYPE;
+import InternalVM.E_VAR_TYPE;
 import InternalVM.Lexer.ELexerTokenType;
 import InternalVM.Lexer.JDocumentPosition;
 import InternalVM.Lexer.JLexer;
@@ -24,8 +24,7 @@ import InternalVM.Parser.JPseudoVariable;
 import InternalVM.Parser.JPseudoProgram;
 import InternalVM.Parser.JPseudoType;
 import InternalVM.Parser.JScriptingLanguage;
-import JScriptParser.VMProviderInterface;
-import com.sun.istack.internal.logging.Logger;
+import InternalVM.VMProviderInterface;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -39,91 +38,135 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     private static final Pattern ISLONG = Pattern.compile("^\\d+$");
     private static final Pattern ISHEX = Pattern.compile("^0x[\\dA-Ea-e]+$");
     
-    public static final JLexerToken WHITESPACE = new JLexerToken(ELexerTokenType.WHITESPACE, " ");
+    private static enum JALPHI_TOKEN_TYPE {
 
-    /**
-     * "\@" symbol defines the start of a token
-     */
-    public static final JLexerToken TOKENSTART = new JLexerToken(ELexerTokenType.COMPARATOR, "$");
-    /**
-     * "." is used to separate parent and child in a object identifier
-     */
-    /**
-     * ":" is used in variable and argument declarations
-     */
-    public static final JLexerToken UNAOP_TOKEN_START = new JLexerToken(ELexerTokenType.UNARYOP, "@");
-    public static final JLexerToken DOT = new JLexerToken(ELexerTokenType.BINARYOP, ".");
-    public static final JLexerToken DECLARE = new JLexerToken(ELexerTokenType.ASSIGN, ":");
-    public static final JLexerToken SEPARATE = new JLexerToken(ELexerTokenType.SEPARATOR, ",");
-    public static final JLexerToken END_INSTRUCTION = new JLexerToken(ELexerTokenType.ENDCOMMAND, ";");
-    public static final JLexerToken ASSIGN = new JLexerToken(ELexerTokenType.ASSIGN, "=");
-    public static final JLexerToken PAR_OPEN = new JLexerToken(ELexerTokenType.SEPARATOR, "(");
-    public static final JLexerToken PAR_CLOSE = new JLexerToken(ELexerTokenType.SEPARATOR, ")");
-    public static final JLexerToken COMP_GREATERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, ">");
-    public static final JLexerToken COMP_LESSERTHAN = new JLexerToken(ELexerTokenType.COMPARATOR, "<");
-    public static final JLexerToken QPAR_OPEN = new JLexerToken(ELexerTokenType.SEPARATOR, "[");
-    public static final JLexerToken QPAR_CLOSE = new JLexerToken(ELexerTokenType.SEPARATOR, "]");
-    public static final JLexerToken UNAOP_BOOL_NOT = new JLexerToken(ELexerTokenType.UNARYOP, "!");
-    public static final JLexerToken BINOP_ADD = new JLexerToken(ELexerTokenType.BINARYOP, "+");
-    public static final JLexerToken BINOP_SUB = new JLexerToken(ELexerTokenType.BINARYOP, "-");
-    public static final JLexerToken BINOP_MULT = new JLexerToken(ELexerTokenType.BINARYOP, "*");
-    public static final JLexerToken BINOP_DIV = new JLexerToken(ELexerTokenType.BINARYOP, "/");
-    public static final JLexerToken BINOP_MOD = new JLexerToken(ELexerTokenType.BINARYOP, "%");
-    public static final JLexerToken BINOP_AND = new JLexerToken(ELexerTokenType.BINARYOP, "&");
-    public static final JLexerToken BINOP_OR = new JLexerToken(ELexerTokenType.BINARYOP, "|");
-    public static final JLexerToken LINE_COMMENT = new JLexerToken(ELexerTokenType.CODE_BLOCK, "//");
-    public static final JLexerToken COMMENT_START = new JLexerToken(ELexerTokenType.CODE_BLOCK, "/*");
-    public static final JLexerToken COMMENT_END = new JLexerToken(ELexerTokenType.CODE_BLOCK, "*/");
-    public static final JLexerToken COMP_ISEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "==");
-    public static final JLexerToken COMP_NOTEQUAL = new JLexerToken(ELexerTokenType.COMPARATOR, "!=");
-    public static final JLexerToken BINOP_SHIFTRIGHT = new JLexerToken(ELexerTokenType.BINARYOP, ">>");
-    public static final JLexerToken BINOP_SHIFTLEFT = new JLexerToken(ELexerTokenType.BINARYOP, "<<");
-    public static final JLexerToken ASSIGN_SHIFTRIGHT_BY = new JLexerToken(ELexerTokenType.ASSIGN, ">>=");
-    public static final JLexerToken ASSIGN_SHIFTLEFT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "<<=");
-    public static final JLexerToken ASSIGN_INCREMENT = new JLexerToken(ELexerTokenType.ASSIGN, "++");
-    public static final JLexerToken ASSIGN_DECREMENT = new JLexerToken(ELexerTokenType.ASSIGN, "--");
-    public static final JLexerToken BINOP_BOOL_AND = new JLexerToken(ELexerTokenType.BINARYOP, "&&");
-    public static final JLexerToken AS_ARRAY = new JLexerToken(ELexerTokenType.UNARYOP, "[]");
-    public static final JLexerToken BINOP_BOOL_OR = new JLexerToken(ELexerTokenType.BINARYOP, "||");
-    public static final JLexerToken ASSIGN_INCREMENT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "+=");
-    public static final JLexerToken ASSIGN_DECREMENT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "-=");
-    public static final JLexerToken ASSIGN_MULT_BY = new JLexerToken(ELexerTokenType.ASSIGN, "*=");
-    public static final JLexerToken ASSIGN_DIV_BY = new JLexerToken(ELexerTokenType.ASSIGN, "/=");
-    public static final JLexerToken ASSIGN_MOD_OF = new JLexerToken(ELexerTokenType.ASSIGN, "%=");
-    public static final JLexerToken UNAOP_NOT = new JLexerToken(ELexerTokenType.UNARYOP, "~");
-    public static final JLexerToken BINOP_XOR = new JLexerToken(ELexerTokenType.BINARYOP, "^");
-    public static final JLexerToken ASSIGN_XOR_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "^=");
-    public static final JLexerToken ASSIGN_OR_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "|=");
-    public static final JLexerToken ASSIGN_AND_WITH = new JLexerToken(ELexerTokenType.ASSIGN, "&=");
-    public static final JLexerToken BLOCK_BEGIN = new JLexerToken(ELexerTokenType.CODE_BLOCK, "{");
-    public static final JLexerToken BLOCK_END = new JLexerToken(ELexerTokenType.CODE_BLOCK, "}");
+        UNDEFINED(-1, "", ELexerTokenType.IDENTIFIER),
+        
+        WHITESPACE(" ", ELexerTokenType.WHITESPACE), 
+        ASSIGN("=", ELexerTokenType.ASSIGN), 
+        MARK_IDENTIFIER("@", ELexerTokenType.UNARYOP), 
+        SELECTOR(".", ELexerTokenType.BINARYOP), 
+        DECLARATOR(":", ELexerTokenType.BINARYOP), 
+        SEPARATE(",", ELexerTokenType.SEPARATOR), 
+        END_INSTRUCTION(";", ELexerTokenType.ENDCOMMAND), 
+        PAR_OPEN("(", ELexerTokenType.SEPARATOR), 
+        PAR_CLOSE(")", ELexerTokenType.SEPARATOR), 
+        EMPTY_PARAMS("()", ELexerTokenType.UNARYOP), 
+        GREATER(">", ELexerTokenType.COMPARATOR), 
+        LESSER("<", ELexerTokenType.COMPARATOR), 
+        QPAR_OPEN("[", ELexerTokenType.SEPARATOR), 
+        QPAR_CLOSE("]", ELexerTokenType.SEPARATOR), 
+        BOOL_NOT("!", ELexerTokenType.UNARYOP), 
+        PLUS("+", ELexerTokenType.BINARYOP), 
+        MINUS("-", ELexerTokenType.BINARYOP), 
+        MULT("*", ELexerTokenType.BINARYOP),
+        DIVIDE("/", ELexerTokenType.BINARYOP),
+        REMINDER("%", ELexerTokenType.BINARYOP), 
+        BITWISE_AND("&", ELexerTokenType.BINARYOP), 
+        BITWISE_OR("|", ELexerTokenType.BINARYOP), 
+        BITWISE_INVERT("~", ELexerTokenType.UNARYOP), 
+        BITWISE_XOR("^", ELexerTokenType.BINARYOP),
+        LINE_COMMENT("//", ELexerTokenType.COMMENT_SINGLELINE), 
+        COMMENT_START("/*", ELexerTokenType.COMMENT_MULTILINE), 
+        COMMENT_END("*/", ELexerTokenType.COMMENT_MULTILINE),
+        BLOCK_BEGIN("{", ELexerTokenType.CODE_BLOCK),
+        BLOCK_END("}", ELexerTokenType.CODE_BLOCK), 
+        TOKEN_START("@", ELexerTokenType.UNARYOP), 
+        ISEQUAL("==", ELexerTokenType.COMPARATOR), 
+        NOTEQUAL("!=", ELexerTokenType.COMPARATOR), 
+        SHIFTRIGHT(">>",ELexerTokenType.BINARYOP), 
+        SHIFTLEFT("<<",ELexerTokenType.BINARYOP), 
+        INCREMENT("++", ELexerTokenType.UNARYOP), 
+        DECREMENT("--", ELexerTokenType.UNARYOP), 
+        BOOL_AND("&&", ELexerTokenType.BINARYOP), 
+        AS_ARRAY("[]", ELexerTokenType.UNARYOP), 
+        BOOL_OR("||", ELexerTokenType.BINARYOP), 
+        INCREMENT_BY("+=", ELexerTokenType.BINARYOP), 
+        DECREMENT_BY("-=", ELexerTokenType.BINARYOP), 
+        MULT_BY("*=", ELexerTokenType.BINARYOP), 
+        DIV_BY("/=", ELexerTokenType.BINARYOP), 
+        REMINDER_OF("%=",ELexerTokenType.BINARYOP), 
+        BITWISE_XOR_WITH("^=", ELexerTokenType.BINARYOP), 
+        BITWISE_OR_WITH("|=", ELexerTokenType.BINARYOP), 
+        BITWISE_AND_WITH("&=", ELexerTokenType.BINARYOP),
+        SHIFTRIGHT_BY(">>=", ELexerTokenType.BINARYOP), 
+        SHIFTLEFT_BY("<<=", ELexerTokenType.BINARYOP), 
+        RETURN("return", ELexerTokenType.KEYWORD), 
+        CONTINUE("continue", ELexerTokenType.KEYWORD), 
+        BREAK("break", ELexerTokenType.KEYWORD), 
+        WHILE("while", ELexerTokenType.KEYWORD), 
+        FOR("for", ELexerTokenType.KEYWORD), 
+        ELSE_IF("elsif", ELexerTokenType.KEYWORD), 
+        ELSE("else", ELexerTokenType.KEYWORD), 
+        IF("if", ELexerTokenType.KEYWORD), 
+        IS("is", ELexerTokenType.KEYWORD),
+        AS("as", ELexerTokenType.KEYWORD), 
+        THIS("this", ELexerTokenType.KEYWORD), 
+        NULL("null", ELexerTokenType.KEYWORD), 
+        TYPE_OBJECT("object", ELexerTokenType.KEYWORD), 
+        TYPE_TOKEN("token", ELexerTokenType.KEYWORD), 
+        TYPE_FLOAT("float", ELexerTokenType.KEYWORD), 
+        TYPE_INTEGER("integer", ELexerTokenType.KEYWORD), 
+        TYPE_STRING("string", ELexerTokenType.KEYWORD), 
+        TYPE_VOID("void", ELexerTokenType.KEYWORD), 
+        IMPORT("import", ELexerTokenType.KEYWORD), 
+        EVENT("Event", ELexerTokenType.KEYWORD), 
+        FUNCTION("Function", ELexerTokenType.KEYWORD), 
+        FRAGMENT("Fragment", ELexerTokenType.KEYWORD), 
+        LIBRARY("Library", ELexerTokenType.KEYWORD), 
+        PROGRAM("Program", ELexerTokenType.KEYWORD),
+        SYSTEM("System", ELexerTokenType.KEYWORD);
+        
+        private static int Counter=Integer.MIN_VALUE;
+        
+        public final int ID;
+        public final String Symbol;
+        public final ELexerTokenType Type;
+        public final JLexerToken Token;
+        
+        private static int nextValue(int id) {
+            return Counter=id;
+        }
 
-    public static final JLexerToken PROGRAM = new JLexerToken(ELexerTokenType.KEYWORD, "Program");
-    public static final JLexerToken LIBRARY = new JLexerToken(ELexerTokenType.KEYWORD, "Library");
-    public static final JLexerToken FUNCTION = new JLexerToken(ELexerTokenType.KEYWORD, "Function");
-    public static final JLexerToken FRAGMENT = new JLexerToken(ELexerTokenType.KEYWORD, "Fragment");
-    public static final JLexerToken EVENT = new JLexerToken(ELexerTokenType.KEYWORD, "Event");
-    public static final JLexerToken IMPORT = new JLexerToken(ELexerTokenType.KEYWORD, "import");
-    public static final JLexerToken TYPE_VOID = new JLexerToken(ELexerTokenType.KEYWORD, "void");
-    public static final JLexerToken TYPE_STRING = new JLexerToken(ELexerTokenType.KEYWORD, "string");
-    public static final JLexerToken TYPE_TOKEN = new JLexerToken(ELexerTokenType.KEYWORD, "token");
-    public static final JLexerToken TYPE_FLOAT = new JLexerToken(ELexerTokenType.KEYWORD, "float");
-    public static final JLexerToken TYPE_INTEGER = new JLexerToken(ELexerTokenType.KEYWORD, "integer");
-    public static final JLexerToken TYPE_OBJECT = new JLexerToken(ELexerTokenType.KEYWORD, "object");
+        private static int nextValue() {
+            return Counter++;
+        }
+        
+        JALPHI_TOKEN_TYPE(int id, String symbol, ELexerTokenType type) {
+            ID = nextValue(id);
+            System.out.println(JALPHI_TOKEN_TYPE.class.getName()+" Initialyzes "+this.name()+" as "+ID);
+            Symbol = symbol;
+            Type = type;
+            Token = new JJalphiToken(Type, Symbol, this);
+        }
+
+        JALPHI_TOKEN_TYPE(String symbol, ELexerTokenType type) {
+            ID = nextValue();
+            Symbol = symbol;
+            Type = type;
+            Token = new JJalphiToken(Type, Symbol, this);
+        }
+    }
     
-    public static final JLexerToken REFERENCE_THIS = new JLexerToken(ELexerTokenType.KEYWORD, "this");
-    public static final JLexerToken REFERENCE_NULL = new JLexerToken(ELexerTokenType.KEYWORD, "null");
+    private static class JJalphiToken extends JLexerToken {
 
-    public static final JLexerToken AS = new JLexerToken(ELexerTokenType.KEYWORD, "as");
-    public static final JLexerToken IS = new JLexerToken(ELexerTokenType.KEYWORD, "is");
-    public static final JLexerToken IF = new JLexerToken(ELexerTokenType.KEYWORD, "if");
-    public static final JLexerToken ELSE = new JLexerToken(ELexerTokenType.KEYWORD, "else");
-    public static final JLexerToken ELSE_IF = new JLexerToken(ELexerTokenType.KEYWORD, "elsif");
-    public static final JLexerToken FOR = new JLexerToken(ELexerTokenType.KEYWORD, "for");
-    public static final JLexerToken WHILE = new JLexerToken(ELexerTokenType.KEYWORD, "while");
-    public static final JLexerToken BREAK = new JLexerToken(ELexerTokenType.KEYWORD, "break");
-    public static final JLexerToken CONTINUE = new JLexerToken(ELexerTokenType.KEYWORD, "continue");
-    public static final JLexerToken RETURN = new JLexerToken(ELexerTokenType.KEYWORD, "return");
+        JALPHI_TOKEN_TYPE Instruction;
+        
+        public JJalphiToken(ELexerTokenType type, String data, JALPHI_TOKEN_TYPE localType) {
+            super(type, data, localType.ID);
+            Instruction = localType;
+        }
+
+        @Override
+        public String toString() {
+            if(Instruction!=JALPHI_TOKEN_TYPE.UNDEFINED)
+                return String.format("<%s> %s", Type.name(), Instruction.name());
+            else 
+                return String.format("<%s> \"%s\"", Type.name(), Data);
+                
+        }
+        
+    }
 
     /**
      * Map to associate all reserved words with their token
@@ -144,78 +187,81 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     }
     
     static {
-        addToMap (RESERVED, PROGRAM);
-        addToMap (RESERVED, LIBRARY);
-        addToMap (RESERVED, FRAGMENT);
-        addToMap (RESERVED, FUNCTION);
-        addToMap (RESERVED, EVENT);
-        addToMap (RESERVED, IMPORT);
-        addToMap (RESERVED, TYPE_VOID);
-        addToMap (RESERVED, TYPE_STRING);
-        addToMap (RESERVED, TYPE_INTEGER);
-        addToMap (RESERVED, TYPE_FLOAT);
-        addToMap (RESERVED, TYPE_TOKEN);
-        addToMap (RESERVED, TYPE_OBJECT);
-        addToMap (RESERVED, REFERENCE_THIS);
-        addToMap (RESERVED, REFERENCE_NULL);
-        addToMap (RESERVED, IS);
-        addToMap (RESERVED, AS);
-        addToMap (RESERVED, IF);
-        addToMap (RESERVED, ELSE);
-        addToMap (RESERVED, ELSE_IF);
-        addToMap (RESERVED, FOR);
-        addToMap (RESERVED, WHILE);
-        addToMap (RESERVED, BREAK);
-        addToMap (RESERVED, CONTINUE);
-        addToMap (RESERVED, RETURN);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.SYSTEM.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.PROGRAM.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.LIBRARY.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.FRAGMENT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.FUNCTION.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.EVENT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.IMPORT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_VOID.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_STRING.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_INTEGER.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_FLOAT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.THIS.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.NULL.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.IS.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.AS.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.IF.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.ELSE.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.ELSE_IF.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.FOR.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.WHILE.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.BREAK.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.CONTINUE.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.RETURN.Token);
         
-        addToMap(SYMBOLS1, DOT);
-        addToMap(SYMBOLS1, DECLARE);
-        addToMap(SYMBOLS1, SEPARATE);
-        addToMap(SYMBOLS1, END_INSTRUCTION);
-        addToMap(SYMBOLS1, ASSIGN);
-        addToMap(SYMBOLS1, PAR_OPEN);
-        addToMap(SYMBOLS1, PAR_CLOSE);
-        addToMap(SYMBOLS1, COMP_GREATERTHAN);
-        addToMap(SYMBOLS1, COMP_LESSERTHAN);
-        addToMap(SYMBOLS1, QPAR_OPEN);
-        addToMap(SYMBOLS1, QPAR_CLOSE);
-        addToMap(SYMBOLS1, UNAOP_BOOL_NOT);
-        addToMap(SYMBOLS1, BINOP_ADD);
-        addToMap(SYMBOLS1, BINOP_SUB);
-        addToMap(SYMBOLS1, BINOP_MULT);
-        addToMap(SYMBOLS1, BINOP_DIV);
-        addToMap(SYMBOLS1, BINOP_MOD);
-        addToMap(SYMBOLS1, BINOP_AND);
-        addToMap(SYMBOLS1, BINOP_OR);
-        addToMap(SYMBOLS1, BLOCK_BEGIN);
-        addToMap(SYMBOLS1, BLOCK_END);
-        addToMap(SYMBOLS1, UNAOP_TOKEN_START);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.SELECTOR.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.DECLARATOR.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.SEPARATE.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.END_INSTRUCTION.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.ASSIGN.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.PAR_OPEN.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.PAR_CLOSE.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.GREATER.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.LESSER.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.QPAR_OPEN.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.QPAR_CLOSE.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BOOL_NOT.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.PLUS.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.MINUS.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.MULT.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.DIVIDE.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.REMINDER.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BITWISE_AND.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BITWISE_OR.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BLOCK_BEGIN.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BLOCK_END.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.TOKEN_START.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BITWISE_INVERT.Token);
+        addToMap(SYMBOLS1, JALPHI_TOKEN_TYPE.BITWISE_XOR.Token);
 
-        addToMap(SYMBOLS2, LINE_COMMENT);
-        addToMap(SYMBOLS2, COMMENT_START);
-        addToMap(SYMBOLS2, COMP_ISEQUAL);
-        addToMap(SYMBOLS2, COMP_NOTEQUAL);
-        addToMap(SYMBOLS2, BINOP_SHIFTRIGHT);
-        addToMap(SYMBOLS2, BINOP_SHIFTLEFT);
-        addToMap(SYMBOLS2, ASSIGN_INCREMENT);
-        addToMap(SYMBOLS2, ASSIGN_DECREMENT);
-        addToMap(SYMBOLS2, BINOP_BOOL_AND);
-        addToMap(SYMBOLS2, AS_ARRAY);
-        addToMap(SYMBOLS2, BINOP_BOOL_OR);
-        addToMap(SYMBOLS2, ASSIGN_INCREMENT_BY);
-        addToMap(SYMBOLS2, ASSIGN_DECREMENT_BY);
-        addToMap(SYMBOLS2, ASSIGN_MULT_BY);
-        addToMap(SYMBOLS2, ASSIGN_DIV_BY);
-        addToMap(SYMBOLS2, ASSIGN_MOD_OF);
-        addToMap(SYMBOLS2, UNAOP_NOT);
-        addToMap(SYMBOLS2, BINOP_XOR);
-        addToMap(SYMBOLS2, ASSIGN_XOR_WITH);
-        addToMap(SYMBOLS2, ASSIGN_OR_WITH);
-        addToMap(SYMBOLS2, ASSIGN_AND_WITH);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.LINE_COMMENT.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.COMMENT_START.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.COMMENT_END.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.ISEQUAL.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.NOTEQUAL.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.SHIFTRIGHT.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.SHIFTLEFT.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.INCREMENT.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.DECREMENT.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.BOOL_AND.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.AS_ARRAY.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.BOOL_OR.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.INCREMENT_BY.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.DECREMENT_BY.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.MULT_BY.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.DIV_BY.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.REMINDER_OF.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.BITWISE_XOR_WITH.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.BITWISE_OR_WITH.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.BITWISE_AND_WITH.Token);
+        addToMap(SYMBOLS2, JALPHI_TOKEN_TYPE.EMPTY_PARAMS.Token);
     
-        addToMap(SYMBOLS3, ASSIGN_SHIFTRIGHT_BY);
-        addToMap(SYMBOLS3, ASSIGN_SHIFTLEFT_BY);
+        addToMap(SYMBOLS3, JALPHI_TOKEN_TYPE.SHIFTRIGHT_BY.Token);
+        addToMap(SYMBOLS3, JALPHI_TOKEN_TYPE.SHIFTLEFT_BY.Token);
     };
 
     @Override
@@ -226,7 +272,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     private Collection<JPseudoInstruction> parseParameters(Iterator<JLexerPositionalToken> tokens) {
         Collection<JPseudoInstruction> parametes = new LinkedList<>();
         JLexerPositionalToken token = null;
-        while(token.Token != PAR_CLOSE) {
+        while(token.Token != JALPHI_TOKEN_TYPE.PAR_CLOSE.Token) {
             token = consumeWhitespaces(tokens);
         }
         return parametes;
@@ -235,7 +281,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     public static class JJALPHIHelper implements JTokenizeHelper{
         
         private StringBuilder sb = null;
-        private static final String AGGREGABLES = "+-/*%&|^!=[]<>";
+        private static final String AGGREGABLES = "+-/*%&|^!=[]<>()";
         private static final String VALIDIDENTIFIERCHARS = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private static final String VALIDIDENTIFIERSTARTCHARS = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private static final String VALIDDIGITS = "0123456789.eE+-";
@@ -250,7 +296,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         private boolean FirstAfterExponent;
         private int CommentType;
         
-        private final List<JLexerPositionalToken> supportList = new LinkedList<>();
         private JDocumentPosition Pos;
 
         private JLexerToken getKnownToken(String toTokenize) {
@@ -267,119 +312,119 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             }            
         }
             
-        private JLexerToken getKnownToken2(String toTokenize) {
-            if(toTokenize==null)
-                return null;
-            else if (toTokenize.length()==2) {
-                switch(toTokenize) {
-                    case "[]":
-                        return AS_ARRAY;
-                    case "!=":
-                        return COMP_NOTEQUAL;
-                    case "==":
-                        return COMP_ISEQUAL;
-                    case "||":
-                        return BINOP_BOOL_OR;
-                    case "&&":
-                        return BINOP_BOOL_AND;
-                    case ">>":
-                        return BINOP_SHIFTRIGHT;
-                    case "<<":
-                        return BINOP_SHIFTLEFT;
-                    case "++":
-                        return ASSIGN_INCREMENT;
-                    case "//":
-                        return LINE_COMMENT;
-                    case "/*":
-                        return COMMENT_START;
-                    case "*/":
-                        CommentType = 0;
-                        NextState = JLexer.E_TOKENIZER_STATE.DEFAULT;
-                        return COMMENT_END;
-                    case "--":
-                        return ASSIGN_DECREMENT;
-                    case "+=":
-                        return ASSIGN_INCREMENT_BY;
-                    case "-=":
-                        return ASSIGN_DECREMENT_BY;
-                    case "*=":
-                        return ASSIGN_MULT_BY;
-                    case "/=":
-                        return ASSIGN_DIV_BY;
-                    case "^=":
-                        return ASSIGN_XOR_WITH;
-                    case "&=":
-                        return ASSIGN_AND_WITH;
-                    case "|=":
-                        return ASSIGN_OR_WITH;
-                    case "%=":
-                        return ASSIGN_MOD_OF;
-                    default:
-                        return null;
-                }
-            } else if (toTokenize.length()==1) {
-                switch(toTokenize) {
-                    case "@":
-                        return UNAOP_TOKEN_START;
-                    case "!":
-                        return UNAOP_BOOL_NOT;
-                    case ";":
-                        return END_INSTRUCTION;
-                    case ",":
-                        return SEPARATE;
-                    case ".":
-                        return DOT;
-                    case "=":
-                        return ASSIGN;
-                    case ":":
-                        return DECLARE;
-                    case "+":
-                        return BINOP_ADD;
-                    case "(":
-                        return PAR_OPEN;
-                    case ")":
-                        return PAR_CLOSE;
-                    case "[":
-                        return QPAR_OPEN;
-                    case "]":
-                        return QPAR_CLOSE;
-                    case "{":
-                        return BLOCK_BEGIN;
-                    case "}":
-                        return BLOCK_END;
-                    case "-":
-                        return BINOP_SUB;
-                    case "*":
-                        return BINOP_MULT;
-                    case "/":
-                        return BINOP_DIV;
-                    case "%":
-                        return BINOP_MOD;
-                    case "&":
-                        return BINOP_AND;
-                    case "|":
-                        return BINOP_OR;
-                    case "^":
-                        return BINOP_XOR;
-                    case ">":
-                        return COMP_GREATERTHAN;
-                    case "<":
-                        return COMP_LESSERTHAN;
-                    default:
-                        return null;
-                }
-            } else if (toTokenize.length()==1) {
-                switch(toTokenize) {
-                    case "<<=":
-                        return ASSIGN_SHIFTLEFT_BY;
-                    case ">>=":
-                        return ASSIGN_SHIFTRIGHT_BY;
-                    default:
-                        return null;
-                }
-            }
-            return null;
-        }  
+//        private JLexerToken getKnownToken2(String toTokenize) {
+//            if(toTokenize==null)
+//                return null;
+//            else if (toTokenize.length()==2) {
+//                switch(toTokenize) {
+//                    case "[]":
+//                        return AS_ARRAY;
+//                    case "!=":
+//                        return COMP_NOTEQUAL;
+//                    case "==":
+//                        return COMP_ISEQUAL;
+//                    case "||":
+//                        return BINOP_BOOL_OR;
+//                    case "&&":
+//                        return BINOP_BOOL_AND;
+//                    case ">>":
+//                        return BINOP_SHIFTRIGHT;
+//                    case "<<":
+//                        return BINOP_SHIFTLEFT;
+//                    case "++":
+//                        return ASSIGN_INCREMENT;
+//                    case "//":
+//                        return LINE_COMMENT;
+//                    case "/*":
+//                        return COMMENT_START;
+//                    case "*/":
+//                        CommentType = 0;
+//                        NextState = JLexer.E_TOKENIZER_STATE.DEFAULT;
+//                        return COMMENT_END;
+//                    case "--":
+//                        return ASSIGN_DECREMENT;
+//                    case "+=":
+//                        return ASSIGN_INCREMENT_BY;
+//                    case "-=":
+//                        return ASSIGN_DECREMENT_BY;
+//                    case "*=":
+//                        return ASSIGN_MULT_BY;
+//                    case "/=":
+//                        return ASSIGN_DIV_BY;
+//                    case "^=":
+//                        return ASSIGN_XOR_WITH;
+//                    case "&=":
+//                        return ASSIGN_AND_WITH;
+//                    case "|=":
+//                        return ASSIGN_OR_WITH;
+//                    case "%=":
+//                        return ASSIGN_MOD_OF;
+//                    default:
+//                        return null;
+//                }
+//            } else if (toTokenize.length()==1) {
+//                switch(toTokenize) {
+//                    case "@":
+//                        return UNAOP_TOKEN_START;
+//                    case "!":
+//                        return UNAOP_BOOL_NOT;
+//                    case ";":
+//                        return END_INSTRUCTION;
+//                    case ",":
+//                        return SEPARATE;
+//                    case ".":
+//                        return SELECTOR;
+//                    case "=":
+//                        return ASSIGN;
+//                    case ":":
+//                        return DECLARE;
+//                    case "+":
+//                        return BINOP_ADD;
+//                    case "(":
+//                        return PAR_OPEN;
+//                    case ")":
+//                        return PAR_CLOSE;
+//                    case "[":
+//                        return QPAR_OPEN;
+//                    case "]":
+//                        return QPAR_CLOSE;
+//                    case "{":
+//                        return BLOCK_BEGIN;
+//                    case "}":
+//                        return BLOCK_END;
+//                    case "-":
+//                        return BINOP_SUB;
+//                    case "*":
+//                        return BINOP_MULT;
+//                    case "/":
+//                        return BINOP_DIV;
+//                    case "%":
+//                        return BINOP_MOD;
+//                    case "&":
+//                        return BINOP_AND;
+//                    case "|":
+//                        return BINOP_OR;
+//                    case "^":
+//                        return BINOP_XOR;
+//                    case ">":
+//                        return COMP_GREATERTHAN;
+//                    case "<":
+//                        return COMP_LESSERTHAN;
+//                    default:
+//                        return null;
+//                }
+//            } else if (toTokenize.length()==1) {
+//                switch(toTokenize) {
+//                    case "<<=":
+//                        return ASSIGN_SHIFTLEFT_BY;
+//                    case ">>=":
+//                        return ASSIGN_SHIFTRIGHT_BY;
+//                    default:
+//                        return null;
+//                }
+//            }
+//            return null;
+//        }  
 
         @Override
         public boolean isNumberStart(char c) {
@@ -399,15 +444,14 @@ public class JScrLanJALPHI extends JScriptingLanguage {
 
         @Override
         public JLexerPositionalToken tokenizeIdentifier() throws ParseException {
-            supportList.clear();
             String s = sb.toString();
             sb=null;
             JLexerToken tempToken = RESERVED.get(s);
             if(tempToken==null) {
                 if(s.charAt(0)=='@')
-                    tempToken = new JLexerToken(ELexerTokenType.TOKEN, s.substring(1));
+                    tempToken = new JJalphiToken(ELexerTokenType.TOKEN, s.substring(1), JALPHI_TOKEN_TYPE.UNDEFINED);
                 else
-                    tempToken = new JLexerToken(ELexerTokenType.IDENTIFIER, s);
+                    tempToken = new JJalphiToken(ELexerTokenType.IDENTIFIER, s, JALPHI_TOKEN_TYPE.UNDEFINED);
             } 
             if(tempToken!=null)
                 return new JLexerPositionalToken(tempToken, Pos);
@@ -465,12 +509,12 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 NextState = JLexer.E_TOKENIZER_STATE.AGGREGABLES;
                 sb.append(c);
                 JLexerToken token = getKnownToken(sb.toString());
-                if(token == COMMENT_START) {
+                if(token == JALPHI_TOKEN_TYPE.COMMENT_START.Token) {
                     sb.delete(sb.length()-2, sb.length());
                     NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
                     CommentType = 2;
                     return false;
-                } else if(token == LINE_COMMENT) {
+                } else if(token == JALPHI_TOKEN_TYPE.LINE_COMMENT.Token) {
                     sb.delete(sb.length()-2, sb.length());
                     NextState = JLexer.E_TOKENIZER_STATE.COMMENT;
                     CommentType = 1;
@@ -501,50 +545,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             JLexerPositionalToken temp = new JLexerPositionalToken(tempToken, Pos);
             clearInternalVariables();
             return temp;
-        }
-        
-        public Collection<JLexerPositionalToken> tokenizeAggregables2() throws ParseException {
-            String aggregate = sb.toString();
-            sb=new StringBuilder();
-            supportList.clear();
-            int i = 0;
-            int len = aggregate.length();
-            JLexerToken tempToken;
-            while(i<len) {
-                String temp;
-                switch (len-i) {
-                    case 0: throw new IllegalAccessError("This value cannot be 0!");
-                    case 1:
-                        temp = aggregate.substring(i,i+1);
-                        break;
-                    case 2:
-                        temp = aggregate.substring(i,i+2);
-                        break;
-                    default:
-                        temp = aggregate.substring(i,i+3);
-                }
-                boolean searching = true;
-                while(searching) {
-                    tempToken = getKnownToken(temp);
-                    if(tempToken == null) {
-                        if(temp.length()==1) {
-                            char c = temp.charAt(0);
-                            if(Character.isDefined(c))
-                                throw new ParseException("Illegal character '"+c+"'", -1);
-                            else
-                                throw new ParseException("Illegal character 0x'"+Integer.toHexString(c)+"'", -1);
-                        } else {
-                            temp=temp.substring(0,temp.length()-1);
-                        }
-                    } else {
-                        searching = false;                    
-                        supportList.add(new JLexerPositionalToken(tempToken, Pos));
-                    }
-                }
-                i+=temp.length();
-            }
-            sb=null;
-            return Collections.unmodifiableCollection(supportList);
         }
 
         @Override
@@ -620,7 +620,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         @Override
         public JLexerPositionalToken tokenizeString() throws ParseException {
             JLexerPositionalToken tempToken = new JLexerPositionalToken(
-                    new JLexerToken(ELexerTokenType.STRING, sb.toString())
+                    new JJalphiToken(ELexerTokenType.STRING, sb.toString(),JALPHI_TOKEN_TYPE.UNDEFINED)
                     ,Pos);
             clearInternalVariables();
             return tempToken;
@@ -649,7 +649,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
 
         @Override
         public JLexerPositionalToken tokenizeWhitespace() {
-            return new JLexerPositionalToken(WHITESPACE, Pos);
+            return new JLexerPositionalToken(JALPHI_TOKEN_TYPE.WHITESPACE.Token, Pos);
         }
 
         @Override
@@ -680,8 +680,8 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         @Override
         public JLexerPositionalToken tokenizeNumber() {
             return new JLexerPositionalToken(
-                    new JLexerToken(
-                            ELexerTokenType.NUMBER, sb.toString()
+                    new JJalphiToken(
+                        ELexerTokenType.NUMBER, sb.toString(),JALPHI_TOKEN_TYPE.UNDEFINED
                     ), Pos
             );
         }
@@ -765,10 +765,10 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             switch (CommentType) {
                 case 2:
                     CommentType = 0;
-                    return new JLexerPositionalToken(new JLexerToken(ELexerTokenType.COMMENT_MULTILINE, sb.toString()),Pos);
+                    return new JLexerPositionalToken(new JJalphiToken(ELexerTokenType.COMMENT_MULTILINE, sb.toString(),JALPHI_TOKEN_TYPE.UNDEFINED),Pos);
                 case 1:
                     CommentType = 0;
-                    return new JLexerPositionalToken(new JLexerToken(ELexerTokenType.COMMENT_SINGLELINE, sb.toString()),Pos);
+                    return new JLexerPositionalToken(new JJalphiToken(ELexerTokenType.COMMENT_SINGLELINE, sb.toString(),JALPHI_TOKEN_TYPE.UNDEFINED),Pos);
                 default:
                     throw new ParseException("Unknown comment type "+CommentType, -1);
             
@@ -800,32 +800,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     private int Cursor;
     private char c;
     private int Scope = 0;
-    
-    
-    private static final String[] PREPROCESSOR = new String[] {IMPORT.Data};
-    
-    private static final String[] CODE_TYPES = new String[] {
-        FRAGMENT.Data, EVENT.Data, FUNCTION.Data
-    };
-    private static final String[] VAR_TYPES = new String[] {
-        TYPE_VOID.Data, 
-        TYPE_TOKEN.Data, 
-        TYPE_INTEGER.Data, 
-        TYPE_FLOAT.Data,
-        TYPE_STRING.Data,
-        TYPE_OBJECT.Data
-    };
-    private static final String[] SPECIAL_VAR = new String[] {
-        REFERENCE_NULL.Data,
-        REFERENCE_THIS.Data
-    };
-    private static final String[] FLOW_CONTROL = new String[] {
-        IF.Data,
-        ELSE.Data,
-        ELSE_IF.Data,
-        FOR.Data,
-        WHILE.Data
-    };
     
     private static final Pattern WHITESPACETOSPACE = Pattern.compile("\\s+");
     private static final Pattern VALIDATE_IDENTIFIER=Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
@@ -907,237 +881,255 @@ public class JScrLanJALPHI extends JScriptingLanguage {
     private JPseudoInstruction parseExpression(Iterator<JLexerPositionalToken> tokens) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
+    
     private List<JPseudoInstruction> parseInstructionsBlock(Iterator<JLexerPositionalToken> tokens, VMProviderInterface provider) throws ParseException {
-        Scope++;
-        int MyScope = Scope;
+        int MyScope = Scope++;
         
         E_PARSE_STATE State = E_PARSE_STATE.FIND_TARGET;
         JLexerPositionalToken item=consumeWhitespaces(tokens);
+        JLexerToken token;
+        JJalphiToken wToken;
+        JJalphiToken wIdentifier;
         if(item==null)
             throw new ParseException("Unexpected end of file!",-1);
         List<JPseudoInstruction> block = new LinkedList<>();
         JPseudoInstruction instruction = null;
+        
+        JPseudoInstruction target = null;
+        JPseudoInstruction source = null;
         JPseudoInstruction baseInstruction = null;
+        
         while(!tokens.hasNext()) {
             item = tokens.next();
-            JLexerToken token = item.Token;
+            token = item.Token;
+            if(token instanceof JJalphiToken) {
+                wToken = (JJalphiToken) token;
+            } else 
+                throw JVMExceptionBuilder.ParseException("Token <{4}> {3} was parsed by incompatible Lexer at ({1},{2})", item, -1);
+            if(wToken.Type==null && wToken.Instruction==null) 
+                throw JVMExceptionBuilder.UnexpectedException("Unexpected token type == null!", item.Pos);
             switch(State) {
                 case FIND_TARGET:
-                    switch(token.Type) {
+                    switch (wToken.Type) {
+                        case IDENTIFIER:
+                            wIdentifier = wToken;
+                            State = E_PARSE_STATE.HAS_TARGET_IDENTIFIER;
+                            break;
                         case COMMENT_MULTILINE:
                         case COMMENT_SINGLELINE:
-                        case WHITESPACE:
-                            break; // comments and whitespaces are ignored
-                        case ASSIGN:
-                            break;
-                        case NUMBER:
-                            throwParseException("Invalid <%s> %s at the beginning of the line: expected identifier.", token);
-                            break;
-                        case BINARYOP:
-                            if(token==BINOP_ADD) {
-                            } else if (token==BINOP_AND) {
-                            } else {
-                            }
-                            break;
-                        case UNEXPECTED:
-                            throwParseException("Unexpected symbol '"+token.Data+"'");
-                            break;
-                        case ENDCOMMAND:
-                            if(token==END_INSTRUCTION) {
-                                if(baseInstruction!=null) {
-                                    State = E_PARSE_STATE.FIND_TARGET;
-                                    if(baseInstruction.isComplete()) {
-                                         block.add(baseInstruction); 
-                                         
-                                                
-                                    }
-                                    baseInstruction = null;
-                                }
-                            }
-                            break;
-                        case UNARYOP:
+                            /** Do nothing **/
                             break;
                         case CODE_BLOCK:
-                            break;
-                        case SEPARATOR:
-                            break;
-                        case STRING:
-                            break;
-                        case IDENTIFIER:
-                            State = E_PARSE_STATE.HAS_TARGET_IDENTIFIER;
-                            if(baseInstruction!=null) {
-                                throw new IllegalAccessError("Identifier already assigned before identifier found!");
+                            switch (wToken.Instruction) {
+                                case BLOCK_END:
+                                    if(target==null) {
+                                        return block;
+                                    } else {
+                                        throw JVMExceptionBuilder.buildException("Found end block before instruction was complete at ({1},{2}).", item.Pos, -1);
+                                    }
+                                case BLOCK_BEGIN:
+                                    if(target!=null) {
+                                        throw JVMExceptionBuilder.buildException("Expected <IDENTIFIER>, found <CODE_BLOCK> \"{\"  at({1},{2})", item.Pos, -1);
+                                    } else {
+                                        instruction = new JPseudoInstruction(E_ACTION.EXECUTE_BLOCK, parseInstructionsBlock(tokens, provider));
+                                        block.add(instruction);
+                                        instruction=null;
+                                    }
+                                    break;
+                                default:
+                                    throw new AssertionError(wToken.Instruction.name());
                             }
-                            baseInstruction = new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data);
                             break;
-                        case COMPARATOR:
+                        case WHITESPACE:
+                            if(target==null) {
+                            } else throw JVMExceptionBuilder.ParseException("Expected <IDENTIFIER>, found <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
                             break;
                         case KEYWORD:
-                            break;
-                        case TOKEN:
+                            switch(wToken.Instruction) {
+                                case RETURN:
+                                    if(baseInstruction==null) {
+                                        baseInstruction = new JPseudoInstruction(E_ACTION.RETURN);
+                                        State = E_PARSE_STATE.PARSE_SOURCE;
+                                    } else throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
+                                    break;
+                                case CONTINUE:
+                                    if(baseInstruction==null) {
+                                        baseInstruction = new JPseudoInstruction(E_ACTION.CONTINUE);
+                                        State = E_PARSE_STATE.PARSE_SOURCE;
+                                    } else throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
+                                    break;
+                                case BREAK:
+                                    if(baseInstruction==null) {
+                                        baseInstruction = new JPseudoInstruction(E_ACTION.BREAK);
+                                        State = E_PARSE_STATE.PARSE_SOURCE;
+                                    } else throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
+                                    break;
+                                case WHILE:
+                                case FOR:
+                                case ELSE_IF:
+                                case ELSE:
+                                case IF:
+                                    throw new UnsupportedOperationException("Not supprterd yet");
+                                case THIS:
+                                    if(baseInstruction==null) {
+                                        baseInstruction = new JPseudoInstruction(E_ACTION.GET_THIS);
+                                        State = E_PARSE_STATE.HAS_TARGET_IDENTIFIER;
+                                    } else throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
+                                    break;
+                                case SYSTEM:
+                                    if(baseInstruction==null) {
+                                        baseInstruction = new JPseudoInstruction(E_ACTION.GET_SYSTEM);
+                                        State = E_PARSE_STATE.HAS_TARGET_IDENTIFIER;
+                                    } else throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\" as part of an identifier at ({1},{2})", item, -1);
+                                    break;
+                                case NULL:
+                                case TYPE_OBJECT:
+                                case TYPE_TOKEN:
+                                case TYPE_FLOAT:
+                                case TYPE_INTEGER:
+                                case TYPE_STRING:
+                                case TYPE_VOID:
+                                    throw JVMExceptionBuilder.ParseException("Invalid <{4}> \"{3}\" at the beginning of an instruction ({1},{2})", item, -1);
+                                default:
+                                    throw new AssertionError(wToken.Instruction.name());
+                            }
+                            wIdentifier = wToken;
                             break;
                         default:
-                            throw new AssertionError(token.Type.name());
+                            throw JVMExceptionBuilder.ParseException("Unexpected <{4}> \"{3}\" at the beginning of an instruction ({1},{2})", item, -1);
                     }
                     break;
                 case HAS_TARGET_IDENTIFIER:
-                    switch(token.Type) {
-                        case ASSIGN:
-                            break;
-                        case NUMBER:
-                            break;
-                        case BINARYOP:
-                            break;
+                    switch(wToken.Instruction) {
+                        case UNDEFINED:
+                            throw JVMExceptionBuilder.ParseException("Unexpected <{4}> {3} at ({1},{2})", item, -1);
                         case WHITESPACE:
-                            break;
-                        case UNEXPECTED:
-                            break;
-                        case ENDCOMMAND:
-                            break;
-                        case UNARYOP:
-                            break;
-                        case CODE_BLOCK:
-                            break;
-                        case SEPARATOR:
-                            break;
-                        case STRING:
-                            break;
-                        case IDENTIFIER:
-                            break;
-                        case COMPARATOR:
-                            break;
-                        case KEYWORD:
-                            break;
-                        case TOKEN:
-                            break;
-                        case COMMENT_MULTILINE:
-                        case COMMENT_SINGLELINE:
-                            break;
-                        default:
-                    throw new AssertionError(token.Type.name());
-                    }
-                    break;                                                
-                case PARSE_SOURCE:
-                    switch(token.Type) {
-                        case COMMENT_MULTILINE: // comments are ignored
-                        case COMMENT_SINGLELINE:
+                            State = E_PARSE_STATE.SEARCH_INSTRUCTION;
                             break;
                         case ASSIGN:
                             break;
-                        case NUMBER:
+                        case MARK_IDENTIFIER:
                             break;
-                        case BINARYOP:
+                        case SELECTOR:
                             break;
-                        case WHITESPACE:
+                        case DECLARATOR:
                             break;
-                        case UNEXPECTED:
+                        case SEPARATE:
                             break;
-                        case ENDCOMMAND:
+                        case END_INSTRUCTION:
                             break;
-                        case UNARYOP:
+                        case PAR_OPEN:
                             break;
-                        case CODE_BLOCK:
+                        case PAR_CLOSE:
                             break;
-                        case SEPARATOR:
+                        case EMPTY_PARAMS:
                             break;
-                        case STRING:
+                        case GREATER:
                             break;
-                        case IDENTIFIER:
+                        case LESSER:
                             break;
-                        case COMPARATOR:
+                        case QPAR_OPEN:
                             break;
-                        case KEYWORD:
+                        case QPAR_CLOSE:
                             break;
-                        case TOKEN:
+                        case BOOL_NOT:
+                            break;
+                        case PLUS:
+                            break;
+                        case MINUS:
+                            break;
+                        case MULT:
+                            break;
+                        case DIVIDE:
+                            break;
+                        case REMINDER:
+                            break;
+                        case BITWISE_AND:
+                            break;
+                        case BITWISE_OR:
+                            break;
+                        case BITWISE_INVERT:
+                            break;
+                        case BITWISE_XOR:
+                            break;
+                        case LINE_COMMENT:
+                            break;
+                        case COMMENT_START:
+                            break;
+                        case COMMENT_END:
+                            break;
+                        case BLOCK_BEGIN:
+                            break;
+                        case BLOCK_END:
+                            break;
+                        case TOKEN_START:
+                            break;
+                        case ISEQUAL:
+                            break;
+                        case NOTEQUAL:
+                            break;
+                        case SHIFTRIGHT:
+                            break;
+                        case SHIFTLEFT:
+                            break;
+                        case INCREMENT:
+                            break;
+                        case DECREMENT:
+                            break;
+                        case BOOL_AND:
+                            break;
+                        case AS_ARRAY:
+                            break;
+                        case BOOL_OR:
+                            break;
+                        case INCREMENT_BY:
+                            break;
+                        case DECREMENT_BY:
+                            break;
+                        case MULT_BY:
+                            break;
+                        case DIV_BY:
+                            break;
+                        case REMINDER_OF:
+                            break;
+                        case BITWISE_XOR_WITH:
+                            break;
+                        case BITWISE_OR_WITH:
+                            break;
+                        case BITWISE_AND_WITH:
+                            break;
+                        case SHIFTRIGHT_BY:
+                            break;
+                        case SHIFTLEFT_BY:
+                            break;
+                        case RETURN: case CONTINUE: case BREAK: case WHILE: case FOR:
+                        case ELSE_IF: case ELSE: case IF: case THIS: case NULL: 
+                        case IMPORT: case EVENT: case FUNCTION: case FRAGMENT:
+                        case LIBRARY: case PROGRAM: case SYSTEM:
+                            throw JVMExceptionBuilder.ParseException("Invalid use of <{4}> \"{3}\", expected operator", item, Size);
+                        case IS:
+                            break;
+                        case AS:
+                            break;
+                        
+                        case TYPE_OBJECT:
+                            break;
+                        case TYPE_TOKEN:
+                            break;
+                        case TYPE_FLOAT:
+                            break;
+                        case TYPE_INTEGER:
+                            break;
+                        case TYPE_STRING:
+                            break;
+                        case TYPE_VOID:
                             break;
                         default:
-                            throw new AssertionError(token.Type.name());
+                            throw JVMExceptionBuilder.ParseException("Unexpected <{4}> {3} at ({1},{2})", item, -1);
                     }
                     break;
                 default:
                     throw new AssertionError(State.name());
-            }
-            switch(token.Type) {
-                case COMMENT_MULTILINE: // Comments are treated as non existing
-                case COMMENT_SINGLELINE: 
-                    break;
-                case ASSIGN:
-                    if(baseInstruction==null) throwParseException("Unexpected <%s> '%s': assignation must start with a target variable ", token);
-                    baseInstruction = new JPseudoInstruction(E_ACTION.ASSIGN, baseInstruction, parseExpression(tokens));
-                    break;
-                case NUMBER:
-                    throwParseException("Identifier expected, <%s> %s found!");
-                    break;                            
-                case BINARYOP:
-                    if(baseInstruction==null) 
-                        throwParseException("Identifier expected, <%s> %s found!");
-                    else {
-                        if(token == DOT) {
-                            instruction = new JPseudoInstruction(E_ACTION.GET_PROPERTY, baseInstruction);
-                        } else if (token == BINOP_ADD) {
-                            instruction = new JPseudoInstruction(E_ACTION.MATH_SUM, baseInstruction);
-                        } else if (token == BINOP_AND) {
-                            instruction = new JPseudoInstruction(E_ACTION.LOGIC_AND, baseInstruction);
-                        } else if (token == BINOP_BOOL_AND) {
-                            instruction = new JPseudoInstruction(E_ACTION.BOOL_AND, baseInstruction);
-                        }
-                        baseInstruction = instruction;
-                    }
-                    break;
-                case WHITESPACE:
-                    break;
-                case UNEXPECTED:
-                    break;
-                case ENDCOMMAND:
-                    if(token==END_INSTRUCTION) {
-                        block.add(baseInstruction);
-                    }
-                    break;
-                case UNARYOP:
-                    break;
-                case CODE_BLOCK:
-                    break;
-                case SEPARATOR:
-                    if(token == PAR_OPEN) {
-                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
-                            baseInstruction.Action = E_ACTION.CALL_METHOD;
-                            baseInstruction.Parameters.addAll(parseParameters(tokens));
-                        } else {}
-                            
-                    } else if (token==QPAR_OPEN) {
-                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
-                            baseInstruction.Action = E_ACTION.GET_PROPERTY_ARRAY;
-                            baseInstruction.Parameters.add(parseExpression(tokens));
-                        } else {}
-                    } else
-                        throwParseException("Unexpected <%s> %s", token);
-                    break;
-                case STRING:
-                    break;
-                case IDENTIFIER:
-                    if(baseInstruction==null) {
-                        instruction = new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data);
-                        baseInstruction = instruction;
-                    } else {
-                        if(foundWhitespace) {
-                            throwParseException("Unexpected <%s> %s after space.", token);
-                        }
-                        if(baseInstruction.Action==E_ACTION.GET_PROPERTY) {
-                            if(baseInstruction.Parameters.size()==1) {
-                                baseInstruction.Parameters.add(new JPseudoInstruction(E_ACTION.GET_OBJECT, token.Data));
-                            }
-                        }
-                    }
-                    break;
-                case COMPARATOR:
-                    break;
-                case KEYWORD:
-                    break;
-                case TOKEN:
-                    break;
-                default:
-                    throw new AssertionError(token.Type.name());
             }
         }
         throw new ParseException("Unexpected end of program!", -1);
@@ -1157,13 +1149,12 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         JLexerPositionalToken item = null;
         JLexerToken token = null;
         boolean working = true; 
-        while(token != PAR_CLOSE) {
+        while(token != JALPHI_TOKEN_TYPE.PAR_CLOSE.Token) {
             item = consumeWhitespaces(tokens);
             if(item!=null)
                 token = item.Token;
             else
-                token = null;
-            throwEndProgramExceptionIfNull(token, " while parsing fragment arguments");
+                throw JVMExceptionBuilder.buildEOFException("While parsing fragment arguments", -1);
             if(token.Type == ELexerTokenType.IDENTIFIER) {
                 boolean isArray=false;
                 String identifier = token.Data;
@@ -1176,7 +1167,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 } else {
                     token = item.Token;
                 }
-                if(token == DECLARE) {
+                if(token == JALPHI_TOKEN_TYPE.DECLARATOR.Token) {
                     item = consumeWhitespaces(tokens);
                     if(item==null) {
                         token=null;
@@ -1184,17 +1175,17 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     } else {
                         token = item.Token;
                     }
-                    if(token==TYPE_INTEGER) {
+                    if(token==JALPHI_TOKEN_TYPE.TYPE_INTEGER.Token) {
                         type = E_VAR_TYPE.INTEGER;
-                    } else if (token == TYPE_FLOAT) {
+                    } else if (token == JALPHI_TOKEN_TYPE.TYPE_FLOAT.Token) {
                         type = E_VAR_TYPE.FLOAT;
-                    } else if (token == TYPE_STRING) {
+                    } else if (token == JALPHI_TOKEN_TYPE.TYPE_STRING.Token) {
                         type = E_VAR_TYPE.STRING;
-                    } else if (token == TYPE_TOKEN) {
+                    } else if (token == JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token) {
                         type = E_VAR_TYPE.TOKEN;
-                    } else if (token == TYPE_VOID) {
+                    } else if (token == JALPHI_TOKEN_TYPE.TYPE_VOID.Token) {
                         type = E_VAR_TYPE.VOID;
-                    } else if (token == TYPE_OBJECT) {
+                    } else if (token == JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token) {
                         type = E_VAR_TYPE.OBJ;
                     } else throwParseException("Expected type, found <%s> %s.", token);
                     item = consumeWhitespaces(tokens);
@@ -1204,7 +1195,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     } else {
                         token = item.Token;
                     }
-                    if(token==DOT) {
+                    if(token==JALPHI_TOKEN_TYPE.SELECTOR.Token) {
                         if(foundWhitespace)
                             throwParseException("Unexpected dot punctation '.' after a space");
                         if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.TOKEN) {
@@ -1231,7 +1222,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                                 throwParseException("Null pointer for type!");
                         }
                     }
-                    if(token==AS_ARRAY) {
+                    if(token==JALPHI_TOKEN_TYPE.AS_ARRAY.Token) {
                         isArray=true;
                         item = consumeWhitespaces(tokens);
                         if(item==null) {
@@ -1241,7 +1232,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                             token = item.Token;
                         }
                     }
-                    if((token==SEPARATE || token == PAR_CLOSE)) {
+                    if((token==JALPHI_TOKEN_TYPE.SEPARATE.Token || token == JALPHI_TOKEN_TYPE.PAR_CLOSE.Token)) {
                         result.add(new JPseudoVariable(identifier, JPseudoType.createType(type, subType, isArray)));
                     } else
                         throwParseException("Expected declartion terminator symbol ')' ro separator ','! found <%s> %s", token);
@@ -1253,6 +1244,16 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         return result;
     }
     
+    /**
+     * parse the first part of the program, all imports until the intestation
+     * included. Will return the type of the fragment, the name, the parameters
+     * passed when called
+     * 
+     * @param tokens iterator with the token parsed bu Lexer
+     * @param Provider instruction provider
+     * @return Pseudoprogram with intestation ready
+     * @throws ParseException
+     */
     private JPseudoProgram parseProgramIntestation(Iterator<JLexerPositionalToken> tokens, VMProviderInterface Provider) throws ParseException {
         if(!tokens.hasNext())
             return null;
@@ -1261,20 +1262,39 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         if(item == null)
             return null;
         JLexerToken token = item.Token;
+        while(token==JALPHI_TOKEN_TYPE.IMPORT.Token) {
+            item = consumeWhitespaces(tokens);
+            if(item == null)
+                throw JVMExceptionBuilder.buildEOFException("Unexpected end of file while parsing import", -1);
+            token = item.Token;
+            if(token.Type==ELexerTokenType.IDENTIFIER || token == JALPHI_TOKEN_TYPE.SYSTEM.Token) {
+                program.addLibraryImport(token.Data);
+            } else throw JVMExceptionBuilder.ParseException("Unexpected <{4}> \"{3}\" instad of <IDENTIFIER> at ({1},{2})", item, -1);
+            item = consumeWhitespaces(tokens);
+            if(item == null)
+                throw JVMExceptionBuilder.buildEOFException("Unexpected end of file while parsing import", -1);
+            token = item.Token;
+            if(token!= JALPHI_TOKEN_TYPE.END_INSTRUCTION.Token)
+                throw JVMExceptionBuilder.ParseException("Unexpected <{4}> \"{3}\" instad of <SEPARATOR> \";\" ({1},{2})", item, -1);
+            item = consumeWhitespaces(tokens);
+            if(item == null)
+                throw JVMExceptionBuilder.buildEOFException("Unexpected end of file while parsing import", -1);
+            token = item.Token;
+        }
         if(token.Type==ELexerTokenType.KEYWORD) {
-            if(token==PROGRAM) {
+            if(token==JALPHI_TOKEN_TYPE.PROGRAM.Token) {
                 program.setType(E_CODE_TYPE.PROGRAM);
-            } else if(token==EVENT) {
+            } else if(token==JALPHI_TOKEN_TYPE.EVENT.Token) {
                 program.setType(E_CODE_TYPE.EVENT);
                 program.addArgument(JPseudoVariable.THIS);
-            } else if(token==FRAGMENT) {
+            } else if(token==JALPHI_TOKEN_TYPE.FRAGMENT.Token) {
                 program.setType(E_CODE_TYPE.FRAGMENT);
                 program.addArgument(JPseudoVariable.THIS);
-            } else if(token==FUNCTION) {
+            } else if(token==JALPHI_TOKEN_TYPE.FUNCTION.Token) {
                 program.setType(E_CODE_TYPE.FUNCTION);
             } else
-                throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
-        } else throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
+                throw JVMExceptionBuilder.ParseException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
+        } else throw JVMExceptionBuilder.ParseException("Invalid <{4}> \"{3}\", expected <KEYWORD> Fragment|Event at ({1},{2})", item, -1);
         item = consumeWhitespaces(tokens);
         if(item == null)
             throw JVMExceptionBuilder.buildEOFException("No fragment name found", -1);
@@ -1282,13 +1302,13 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         if(token.Type==ELexerTokenType.IDENTIFIER) {
             program.setName(token.Data);
         } else {
-            throw JVMExceptionBuilder.buildException("Invalid <{4}> \"{3}\", expected <IDENTIFIER> at ({1},{2})", item, -1);
+            throw JVMExceptionBuilder.ParseException("Invalid <{4}> \"{3}\", expected <IDENTIFIER> at ({1},{2})", item, -1);
         }
         item = consumeWhitespaces(tokens);
         if(item == null)
             throw JVMExceptionBuilder.buildEOFException("No parameters list found", -1);
         token = item.Token;
-        if(token == PAR_OPEN) {
+        if(token == JALPHI_TOKEN_TYPE.PAR_OPEN.Token) {
             parseArguments(tokens).forEach(argument -> {
                 program.addArgument(argument);
             });
@@ -1302,7 +1322,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         } else {
             token = item.Token;
         }
-        if (token == DECLARE) {
+        if (token == JALPHI_TOKEN_TYPE.DECLARATOR.Token) {
             item = consumeWhitespaces(tokens);
             if(item==null) {
                 token = null;
@@ -1313,42 +1333,42 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             String subType=null;
             boolean isArray=false;
             E_VAR_TYPE type=null;
-            if(token==TYPE_INTEGER) {
+            if(token==JALPHI_TOKEN_TYPE.TYPE_INTEGER.Token) {
                 type = E_VAR_TYPE.INTEGER;
-            } else if (token == TYPE_FLOAT) {
+            } else if (token == JALPHI_TOKEN_TYPE.TYPE_FLOAT.Token) {
                 type = E_VAR_TYPE.FLOAT;
-            } else if (token == TYPE_STRING) {
+            } else if (token == JALPHI_TOKEN_TYPE.TYPE_STRING.Token) {
                 type = E_VAR_TYPE.STRING;
-            } else if (token == TYPE_TOKEN) {
+            } else if (token == JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token) {
                 type = E_VAR_TYPE.TOKEN;
-            } else if (token == TYPE_VOID) {
+            } else if (token == JALPHI_TOKEN_TYPE.TYPE_VOID.Token) {
                 type = E_VAR_TYPE.VOID;
-            } else if (token == TYPE_OBJECT) {
+            } else if (token == JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token) {
                 type = E_VAR_TYPE.OBJ;
-            } else throwParseException("Expected type, found <%s> %s.", token);
+            } else
+                throw JVMExceptionBuilder.ParseException("Expected type, found <{4}> \"{3}\" at ({1},{2}).", item, -1);
             item = consumeWhitespaces(tokens);
             if(item==null) {
-                token = null;
-                throwEndProgramExceptionIfNull(token, " before parameters list");
+                throw JVMExceptionBuilder.buildEOFException("Before parameters list", -1);
             } else {
                 token = item.Token;
             }
-            if(token==DOT) {
+            if(token==JALPHI_TOKEN_TYPE.SELECTOR.Token) {
                 if(foundWhitespace) {
-                    throwParseException("Found space before separator dot . ");
+                    throw JVMExceptionBuilder.ParseException("\"Found space before separator dot . at ({1},{2}).", item, -1);
                 } else {
                     item = consumeWhitespaces(tokens);
                     if(item==null) {
-                        token = null;
-                        throwEndProgramExceptionIfNull(token, " before parameters list");
+                        throw JVMExceptionBuilder.buildEOFException("Before parameters list", -1);
                     } else {
                         token = item.Token;
                     }
                     if(token.Type==ELexerTokenType.IDENTIFIER) {
-                    } else throwParseException("", token);
-                }
+                        subType = token.Data;
+                    } else 
+                        throw JVMExceptionBuilder.ParseException("Expected <IDENTIFIER>, found <{4}> \"{3}\" at ({1},{2}).", item, -1);                }
             }
-            if(token==AS_ARRAY) {
+            if(token==JALPHI_TOKEN_TYPE.AS_ARRAY.Token) {
                 if(program.getType()==E_CODE_TYPE.FUNCTION) {
                     isArray=true;
                 } else throw new ParseException(program.getType().name()+" can't return an array type.",-1);
@@ -1362,7 +1382,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             }
             program.setReturnType(JPseudoType.createType(type, subType, isArray));
         }
-        if(token ==BLOCK_BEGIN)
+        if(token ==JALPHI_TOKEN_TYPE.BLOCK_BEGIN.Token)
             return program;
         else { 
             throwParseException("Unexpected token <%s> %s at the end of framgnet intestation.", token);

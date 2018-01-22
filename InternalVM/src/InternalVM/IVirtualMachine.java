@@ -1,4 +1,4 @@
-package JScriptParser;
+package InternalVM;
 
 import java.util.List;
 

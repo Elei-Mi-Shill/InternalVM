@@ -28,7 +28,8 @@ public enum ELexerTokenType {
     KEYWORD("[_]?[A-Z][a-z]*"), 
     TOKEN("[_]?[A-Z][_A-Z0-9]"), 
     COMMENT_MULTILINE("\\Q/*\\E[.]*\\Q*/\\E"),
-    COMMENT_SINGLELINE("\\Q//\\E[.]*$");
+    COMMENT_SINGLELINE("\\Q//\\E[.]*$"),
+    SYMBOL("\\W");
 
     public final Pattern pattern;
 

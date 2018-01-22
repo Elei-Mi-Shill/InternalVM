@@ -5,13 +5,12 @@
  */
 package InternalVM.Compiler;
 
-import JScriptParser.JAssembly;
+import InternalVM.JAssembly;
 import InternalVM.Lexer.JLexer;
 import InternalVM.Lexer.JLexerPositionalToken;
-import InternalVM.Lexer.JLexerToken;
 import InternalVM.Parser.JPseudoProgram;
 import InternalVM.Parser.JScriptingLanguage;
-import JScriptParser.VMProviderInterface;
+import InternalVM.VMProviderInterface;
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.ParseException;

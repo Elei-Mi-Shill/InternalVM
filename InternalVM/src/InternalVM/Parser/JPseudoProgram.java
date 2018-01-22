@@ -5,8 +5,8 @@
  */
 package InternalVM.Parser;
 
-import JScriptParser.E_CODE_TYPE;
-import JScriptParser.E_VAR_TYPE;
+import InternalVM.E_CODE_TYPE;
+import InternalVM.E_VAR_TYPE;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,5 +84,11 @@ public class JPseudoProgram {
 
     public void addArgument(JPseudoVariable THIS) {
         Arguments.add(THIS);
+    }
+
+    public void addLibraryImport(String libraryName) {
+        if(!"System".equals(libraryName)) { // System library is implied, no need for explicit declaration
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
     }
 }

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package JScriptParser;
+package InternalVM;
 
 /**
  *
@@ -52,7 +52,10 @@ public enum E_ACTION {
      * returns the value of the calling object
      */
     GET_THIS, 
-
+    /**
+     * similar to GET_THIS, returns the base object for the SYSTEM library
+     */
+    GET_SYSTEM,
     COMPARE,
     MATH_SUM,
     MATH_SUBTRACT,
@@ -113,6 +116,19 @@ public enum E_ACTION {
      * @param Value String containing the identifier name
      */
     GET_OBJECT, 
-    GET_NULL; 
+    GET_NULL, 
+    /**
+     * Exits the fragment, returning the value declared in the intestation
+     */    
+    RETURN, 
+    /**
+     * Exits the current for/while iteration, without exiting the for/wile cicle
+     */    
+    CONTINUE, 
+    /**
+     * exits the current for/while instruction
+     */
+    BREAK, 
+    ; 
 
 }

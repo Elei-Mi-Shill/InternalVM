@@ -5,6 +5,7 @@
  */
 package InternalVM.Lexer;
 
+import InternalVM.Parser.JALPHI.JScrLanJALPHI;
 import java.util.Arrays;
 
 /**
@@ -16,8 +17,9 @@ public class JLexerToken {
     
     public final ELexerTokenType Type;
     public final String Data;
+    public final int Extra;
 
-    public JLexerToken(ELexerTokenType type, String data) {
+    public JLexerToken(ELexerTokenType type, String data, int extra) {
         Type = type;
         Data = data;
         if(Type==ELexerTokenType.NUMBER) {
@@ -25,10 +27,11 @@ public class JLexerToken {
                 throw new IllegalArgumentException("Invalid number: "+ Arrays.toString(Data.toCharArray()));
             }
         }
+        Extra = extra;
     }
 
     @Override
     public String toString() {
-        return String.format(">>%s: %s", Type.name(), Data);
+        return String.format("<%s[%d]> %s ", Type.name(), Extra, Data);
     }
 }

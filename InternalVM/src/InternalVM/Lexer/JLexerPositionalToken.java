@@ -31,12 +31,9 @@ public class JLexerPositionalToken {
         sb.append(Pos.Row);
         sb.append(",");
         sb.append(Pos.Col);
-        sb.append(") <");
-        sb.append(Token.Type.name());
-        sb.append("> \"");
-        sb.append(Token.Data);
-        sb.append("\"");
+        sb.append(Token.toString());
         return sb.toString();
+        
     }
     
     

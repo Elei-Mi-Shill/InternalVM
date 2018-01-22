@@ -8,7 +8,7 @@ package InternalVM.Parser;
 import InternalVM.Lexer.JLexerPositionalToken;
 import InternalVM.Lexer.JTokenizeHelper;
 import InternalVM.Parser.JALPHI.JScrLanJALPHI;
-import JScriptParser.VMProviderInterface;
+import InternalVM.VMProviderInterface;
 import java.text.ParseException;
 import java.util.Iterator;
 

@@ -5,7 +5,7 @@
  */
 package InternalVM.Parser;
 
-import JScriptParser.E_VAR_TYPE;
+import InternalVM.E_VAR_TYPE;
 import java.text.ParseException;
 
 /**

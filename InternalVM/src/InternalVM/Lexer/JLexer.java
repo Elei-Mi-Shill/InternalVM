@@ -115,8 +115,8 @@ public class JLexer {
                     col++;
             }
         }
-        if(State != E_TOKENIZER_STATE.DEFAULT) {
-            throw new ParseException("Unexpected end of file!", -1);
+        if(State != E_TOKENIZER_STATE.DEFAULT && State!=E_TOKENIZER_STATE.WHIESPACE) {
+            throw new ParseException("Unexpected end of file while in state "+State.name()+"!", -1);
         }
         return list;
     }
