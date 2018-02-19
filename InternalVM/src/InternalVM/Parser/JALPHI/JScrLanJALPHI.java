@@ -26,7 +26,6 @@ import InternalVM.Parser.JPseudoType;
 import InternalVM.Parser.JScriptingLanguage;
 import InternalVM.VMProviderInterface;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -103,12 +102,15 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         AS("as", ELexerTokenType.KEYWORD), 
         THIS("this", ELexerTokenType.KEYWORD), 
         NULL("null", ELexerTokenType.KEYWORD), 
+        TRUE("true", ELexerTokenType.KEYWORD), 
+        FALSE("false", ELexerTokenType.KEYWORD), 
         TYPE_OBJECT("object", ELexerTokenType.KEYWORD), 
         TYPE_TOKEN("token", ELexerTokenType.KEYWORD), 
         TYPE_FLOAT("float", ELexerTokenType.KEYWORD), 
         TYPE_INTEGER("integer", ELexerTokenType.KEYWORD), 
         TYPE_STRING("string", ELexerTokenType.KEYWORD), 
         TYPE_VOID("void", ELexerTokenType.KEYWORD), 
+        TYPE_BOOLEAN("boolean", ELexerTokenType.KEYWORD), 
         IMPORT("import", ELexerTokenType.KEYWORD), 
         EVENT("Event", ELexerTokenType.KEYWORD), 
         FUNCTION("Function", ELexerTokenType.KEYWORD), 
@@ -200,8 +202,11 @@ public class JScrLanJALPHI extends JScriptingLanguage {
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_FLOAT.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TYPE_BOOLEAN.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.THIS.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.NULL.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.TRUE.Token);
+        addToMap (RESERVED, JALPHI_TOKEN_TYPE.FALSE.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.IS.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.AS.Token);
         addToMap (RESERVED, JALPHI_TOKEN_TYPE.IF.Token);
@@ -311,120 +316,6 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                 return null;
             }            
         }
-            
-//        private JLexerToken getKnownToken2(String toTokenize) {
-//            if(toTokenize==null)
-//                return null;
-//            else if (toTokenize.length()==2) {
-//                switch(toTokenize) {
-//                    case "[]":
-//                        return AS_ARRAY;
-//                    case "!=":
-//                        return COMP_NOTEQUAL;
-//                    case "==":
-//                        return COMP_ISEQUAL;
-//                    case "||":
-//                        return BINOP_BOOL_OR;
-//                    case "&&":
-//                        return BINOP_BOOL_AND;
-//                    case ">>":
-//                        return BINOP_SHIFTRIGHT;
-//                    case "<<":
-//                        return BINOP_SHIFTLEFT;
-//                    case "++":
-//                        return ASSIGN_INCREMENT;
-//                    case "//":
-//                        return LINE_COMMENT;
-//                    case "/*":
-//                        return COMMENT_START;
-//                    case "*/":
-//                        CommentType = 0;
-//                        NextState = JLexer.E_TOKENIZER_STATE.DEFAULT;
-//                        return COMMENT_END;
-//                    case "--":
-//                        return ASSIGN_DECREMENT;
-//                    case "+=":
-//                        return ASSIGN_INCREMENT_BY;
-//                    case "-=":
-//                        return ASSIGN_DECREMENT_BY;
-//                    case "*=":
-//                        return ASSIGN_MULT_BY;
-//                    case "/=":
-//                        return ASSIGN_DIV_BY;
-//                    case "^=":
-//                        return ASSIGN_XOR_WITH;
-//                    case "&=":
-//                        return ASSIGN_AND_WITH;
-//                    case "|=":
-//                        return ASSIGN_OR_WITH;
-//                    case "%=":
-//                        return ASSIGN_MOD_OF;
-//                    default:
-//                        return null;
-//                }
-//            } else if (toTokenize.length()==1) {
-//                switch(toTokenize) {
-//                    case "@":
-//                        return UNAOP_TOKEN_START;
-//                    case "!":
-//                        return UNAOP_BOOL_NOT;
-//                    case ";":
-//                        return END_INSTRUCTION;
-//                    case ",":
-//                        return SEPARATE;
-//                    case ".":
-//                        return SELECTOR;
-//                    case "=":
-//                        return ASSIGN;
-//                    case ":":
-//                        return DECLARE;
-//                    case "+":
-//                        return BINOP_ADD;
-//                    case "(":
-//                        return PAR_OPEN;
-//                    case ")":
-//                        return PAR_CLOSE;
-//                    case "[":
-//                        return QPAR_OPEN;
-//                    case "]":
-//                        return QPAR_CLOSE;
-//                    case "{":
-//                        return BLOCK_BEGIN;
-//                    case "}":
-//                        return BLOCK_END;
-//                    case "-":
-//                        return BINOP_SUB;
-//                    case "*":
-//                        return BINOP_MULT;
-//                    case "/":
-//                        return BINOP_DIV;
-//                    case "%":
-//                        return BINOP_MOD;
-//                    case "&":
-//                        return BINOP_AND;
-//                    case "|":
-//                        return BINOP_OR;
-//                    case "^":
-//                        return BINOP_XOR;
-//                    case ">":
-//                        return COMP_GREATERTHAN;
-//                    case "<":
-//                        return COMP_LESSERTHAN;
-//                    default:
-//                        return null;
-//                }
-//            } else if (toTokenize.length()==1) {
-//                switch(toTokenize) {
-//                    case "<<=":
-//                        return ASSIGN_SHIFTLEFT_BY;
-//                    case ">>=":
-//                        return ASSIGN_SHIFTRIGHT_BY;
-//                    default:
-//                        return null;
-//                }
-//            }
-//            return null;
-//        }  
 
         @Override
         public boolean isNumberStart(char c) {
@@ -1182,7 +1073,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     } else if (token == JALPHI_TOKEN_TYPE.TYPE_STRING.Token) {
                         type = E_VAR_TYPE.STRING;
                     } else if (token == JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token) {
-                        type = E_VAR_TYPE.TOKEN;
+                        type = E_VAR_TYPE.IDENTIFIER;
                     } else if (token == JALPHI_TOKEN_TYPE.TYPE_VOID.Token) {
                         type = E_VAR_TYPE.VOID;
                     } else if (token == JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token) {
@@ -1198,7 +1089,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
                     if(token==JALPHI_TOKEN_TYPE.SELECTOR.Token) {
                         if(foundWhitespace)
                             throwParseException("Unexpected dot punctation '.' after a space");
-                        if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.TOKEN) {
+                        if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.IDENTIFIER) {
                             if(!tokens.hasNext()) 
                                 throwParseException("Unexpected end of file while parsing fragment arguments");
                             item = tokens.next();
@@ -1340,7 +1231,7 @@ public class JScrLanJALPHI extends JScriptingLanguage {
             } else if (token == JALPHI_TOKEN_TYPE.TYPE_STRING.Token) {
                 type = E_VAR_TYPE.STRING;
             } else if (token == JALPHI_TOKEN_TYPE.TYPE_TOKEN.Token) {
-                type = E_VAR_TYPE.TOKEN;
+                type = E_VAR_TYPE.IDENTIFIER;
             } else if (token == JALPHI_TOKEN_TYPE.TYPE_VOID.Token) {
                 type = E_VAR_TYPE.VOID;
             } else if (token == JALPHI_TOKEN_TYPE.TYPE_OBJECT.Token) {

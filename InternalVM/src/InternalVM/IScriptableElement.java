@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
  */
 public interface IScriptableElement {
     
+    public DefObject getDescriptor();
+    
     /**
      * used by validateTOKEN
      */
@@ -40,14 +42,25 @@ public interface IScriptableElement {
      * @param index
      * @return parameter's value
      */
-    float getPropertyValue(int index);
+    JVariable getPropertyValue(int propertyID);
+    JVariable getPropertyArrayValue(int propertyID, int Index);
+    boolean getPropertyValueBoolean(int propertyID);
+    double getPropertyValueFloat(int propertyID);
+    long getPropertyValueInt(int propertyID);
+    String getPropertyValueString(int propertyID);
+    JVariable[] getPropertyArray(int propertyID);
 
     /**
      * Sets the value of the specified property
      * @param index index of the property to set
      * @param aValue new value for the property
      */
-    void setPropertyValue(int index, float aValue);
+    void setPropertyValue(int propertyID, JVariable aValue);
+    void setPropertyArrayValue(int propertyID, int index, JVariable aValue);
+    void setPropertyValueFloat(int propertyID, double aValue);
+    void setPropertyValueInteger(int propertyID, long aValue);
+    void setPropertyValueString(int propertyID, String aValue);
+    void setPropertyValueBoolean(int propertyID, boolean aValue);
 
     /**
      * returns the mnemonic identifier of this object to be used by the compiler;
@@ -67,7 +80,7 @@ public interface IScriptableElement {
      * @param regs
      * @return true if success, false if some errors occurred
      */
-    boolean callFunction(int funcIndex, JRegisters regs);
+    boolean callMethod(int functionID, JRegisters regs);
     
     /**
      * This function is used inside the compiler and Virtual Machine to
@@ -79,14 +92,6 @@ public interface IScriptableElement {
      */
     public boolean IsTypeOf(int type);
 
-    /**
-     * This function is used inside the compiler and Virtual Machine to
-     * determine the exact type of a variable.
-     * 
-     * @return
-     */
-    public int getType();
-    
     /**
      * returns the current error message. The message is CONSUMED after the call, 
      * meaning that any subsequent calls will return ""

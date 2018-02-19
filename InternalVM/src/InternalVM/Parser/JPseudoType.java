@@ -21,12 +21,12 @@ public class JPseudoType {
     public static final JPseudoType INTEGER = new JPseudoType(E_VAR_TYPE.INTEGER, false);
     public static final JPseudoType FLOAT = new JPseudoType(E_VAR_TYPE.FLOAT, false);
     public static final JPseudoType STRING = new JPseudoType(E_VAR_TYPE.STRING, false);
-    public static final JPseudoType TOKEN = new JPseudoType(E_VAR_TYPE.TOKEN, false);
+    public static final JPseudoType TOKEN = new JPseudoType(E_VAR_TYPE.IDENTIFIER, false);
     public static final JPseudoType CANONIC_OBJECT = new JPseudoType(E_VAR_TYPE.OBJ, false);
     public static final JPseudoType ARRAY_INTEGER = new JPseudoType(E_VAR_TYPE.INTEGER, true);
     public static final JPseudoType ARRAY_FLOAT = new JPseudoType(E_VAR_TYPE.FLOAT, true);
     public static final JPseudoType ARRAY_STRING = new JPseudoType(E_VAR_TYPE.STRING, true);
-    public static final JPseudoType ARRAY_TOKEN = new JPseudoType(E_VAR_TYPE.TOKEN, true);
+    public static final JPseudoType ARRAY_TOKEN = new JPseudoType(E_VAR_TYPE.IDENTIFIER, true);
     public static final JPseudoType ARRAY_CANONIC_OBJECT = new JPseudoType(E_VAR_TYPE.OBJ, true);
 
     /**
@@ -45,7 +45,7 @@ public class JPseudoType {
                 if(isArray) return ARRAY_STRING; else return STRING;
             case OBJ:
                 if(isArray) return ARRAY_CANONIC_OBJECT; else return CANONIC_OBJECT;
-            case TOKEN:
+            case IDENTIFIER:
                 if(isArray) return ARRAY_TOKEN; else return TOKEN;
             case VOID:
                 if(isArray) throw new IllegalArgumentException("You cannot declare an array of void"); else return VOID;
@@ -58,7 +58,7 @@ public class JPseudoType {
     public static JPseudoType createType(E_VAR_TYPE type, String subType, boolean isArray) throws ParseException {
         if(subType==null || "".equals(subType))
             return createType(type, isArray);
-        else if (type==E_VAR_TYPE.OBJ || type == E_VAR_TYPE.TOKEN) {
+        else if (type==E_VAR_TYPE.OBJ || type == E_VAR_TYPE.IDENTIFIER) {
             return new JPseudoType(type, subType, isArray);
         } else throw new ParseException("Only Object and TOKEN types can have subtype",-1);
     }
@@ -76,7 +76,7 @@ public class JPseudoType {
     }
     
     public JPseudoType(E_VAR_TYPE type, String subType, boolean isArray) {
-        if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.TOKEN) {
+        if(type == E_VAR_TYPE.OBJ || type == E_VAR_TYPE.IDENTIFIER) {
             Type = type;
             SubType = subType;
             IsArray = isArray;

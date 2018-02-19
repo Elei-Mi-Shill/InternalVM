@@ -560,6 +560,5 @@ public class JScrLanSimpleInit extends JScriptingLanguage {
         program = parseProgramIntestation(tokens, provider);
         return program;
     }
-
     
 }

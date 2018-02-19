@@ -7,10 +7,10 @@ package InternalVM.Parser;
 
 import InternalVM.Lexer.JLexerPositionalToken;
 import InternalVM.Lexer.JTokenizeHelper;
-import InternalVM.Parser.JALPHI.JScrLanJALPHI;
 import InternalVM.VMProviderInterface;
 import java.text.ParseException;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  *
@@ -18,8 +18,8 @@ import java.util.Iterator;
  */
 public abstract class JScriptingLanguage {
     
-    public static JScriptingLanguage JALPHI = new JScrLanJALPHI();
-
+    private static List<JScriptingLanguageDescriptors> Languages;
+    
     public abstract String getName();
     public abstract double getRevision();
     public abstract JTokenizeHelper getHelper();

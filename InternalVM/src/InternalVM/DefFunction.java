@@ -12,9 +12,15 @@ package InternalVM;
 public class DefFunction {
     public final String Name;
     DefParameter[] Params;
+    public final int ID;
+    public final E_VAR_TYPE ReturnType;
+    public final DefObject SubType;
     
-    public DefFunction (String name, DefParameter[] params) {
+    public DefFunction (int id, String name, DefParameter[] params, E_VAR_TYPE returnType, DefObject subType) {
         Name = name;
         this.Params = params;
+        ID = id;
+        ReturnType = returnType;
+        SubType = subType;
     }
 }

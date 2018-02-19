@@ -5,26 +5,38 @@
  */
 package InternalVM;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 /**
  *
  * @author luca.scarcia
  */
 public class DefObject {
     public final String Name;
-    int ID;
-    DefFunction[] Functions;
+    public final int ID;
+    Map<String, DefFunction> IndexedFunctions = new TreeMap<>();
+    List<DefFunction> Functions = new ArrayList<>();
     
-    public DefObject(String name) {
+    public DefObject(int id, String name) {
+        ID = id;
         Name = name;
     }
     
-    public DefObject(String name, DefFunction[] functions) {
+    public DefObject(int id, String name, DefFunction[] functions) {
+        ID = id;
         Name = name;
-        Functions = functions;
     }
     
-    public DefFunction[] getFunctions() {
-        return Functions;
+    public DefFunction getFunction(String name) {
+        return IndexedFunctions.get(name);
+    }
+    
+    public DefFunction registerFunction(DefFunction function) throws IllegalArgumentException {
+        IndexedFunctions.put(function.Name, function);
+        return function;
     }
     
 }
